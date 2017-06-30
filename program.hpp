@@ -54,18 +54,19 @@ class Program
 	map<string, int> labels;
 	istream &is; ostream &os;
 	statement* cache[4];
-	std::condition_variable empty[4], full[4];
-	mutex empty_lock[4], full_lock[4];
-	mutex _lock[4];
+//	std::condition_variable empty[4], full[4];
+//	mutex empty_lock[4], full_lock[4];
+//	mutex _lock[4];
 	CPU &cpu;
 	Memory &mem;
 	int clocks = 0;
 	friend class statement;
+	friend class syscall;
 public:
 	Program(CPU &_cpu, Memory &_mem, istream &_is, ostream &_os);
 	
-	mutex globl;
-	mutex hazard;
+	bool globl;
+	bool hazard;
 	int globl_return;
 
 	void push_back(const command &x);
@@ -74,7 +75,7 @@ public:
 	
 	int getLabel(const string &Label);
 	
-	OP getcommand(int index, int data[], bool &imm, int &num);
+	OP getcommand(int index, int data[], int state[]);
 	
 	command* getcommand(const string &label);
 	

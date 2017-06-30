@@ -23,24 +23,24 @@ class CPU
 {
 private:
 	int cache[35];
-//	bool used[35];
+	bool used[35];
 	static map<string, int> cache_code;
 	
 public:
 	CPU();
-	mutex _lock[35];
+//	mutex _lock[35];
 	
 	static void inti();
 	
 	static int exchange(const string &x);
 	
-//	bool valid(const int &x);
+	bool valid(const int &x);
 	
-//	bool valid(const string &x);
+	bool valid(const string &x);
 	
-//	void setused(const int &x, bool t);
+	void setused(const int &x, bool t);
 	
-//	void setused(const string &x, bool t);
+	void setused(const string &x, bool t);
 	
 	int& operator [] (const string &x);
 	

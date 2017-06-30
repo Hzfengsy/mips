@@ -109,18 +109,13 @@ int Program::getLabel(const string &Label)
 	return labels[Label];
 }
 
-OP Program::getcommand(int index, int data[], bool &imm, int &num)
+OP Program::getcommand(int index, int data[], int state[3])
 {
-	imm = num = 0;
 	for (int i = 0; i < 3; i++)
 	{
 		data[i] = commands[index].data[i];
-		if (commands[index].state[i] == 2) imm = 1;
-		if (commands[index].state[i]) num++;
+		state[i] = commands[index].state[i];
 	}
-	if (commands[index].op == BEQ || commands[index].op == BNE || commands[index].op == BLE ||
-		commands[index].op == BLT || commands[index].op == BGE || commands[index].op == BGT)
-		imm = commands[index].state[1] == 2;
 	return commands[index].op;
 }
 
@@ -140,99 +135,73 @@ void Program::exchengLabel()
 
 void Program::IF()
 {
-	while(1)
-	{
-		std::unique_lock<mutex> lock0(_lock[0]);
-		while (cache[0] != NULL) empty[0].wait(lock0);
-//		while (cache[0] != NULL) continue;
-		statement *st = new statement(this);
-		cache[0] = st->IF();
-		full[0].notify_all();
-	}
+	if (cache[0] != NULL) return;
+	statement *st = new statement(this);
+	statement *ans = st->IF();
+	if (ans) cache[0] = ans;
+	else delete st;
 }
 
 void Program::ID()
 {
-	while (1)
-	{
-		std::unique_lock<mutex> lock0(_lock[0]);
-		while (cache[0] == NULL) full[0].wait(lock0);
-//		while (cache[0] == NULL) continue;
-		std::unique_lock<mutex> lock1(_lock[1]);
-		while (cache[1] != NULL) empty[1].wait(lock1);
-//		while (cache[1] != NULL) continue;
-		statement *ans = cache[0]->ID();
-		cache[1] = ans;
-		delete cache[0]; cache[0] = NULL;
-		full[1].notify_all(), empty[0].notify_all();
-		clocks++;
-	}
+	if (cache[1] != NULL || cache[0] == NULL) return;
+	statement *ans = cache[0]->ID();
+	if (ans == NULL) return;
+	cache[1] = ans;
+	delete cache[0]; cache[0] = NULL;
 }
 
 void Program::EX()
 {
-	while(1)
-	{
-		std::unique_lock<mutex> lock1(_lock[1]);
-		while (cache[1] == NULL) full[1].wait(lock1);
-//		while (cache[1] == NULL) continue;
-		std::unique_lock<mutex> lock2(_lock[2]);
-		while (cache[2] != NULL) empty[2].wait(lock2);
-//		while (cache[2] != NULL) continue;
-		statement *ans = cache[1]->EXEC();
-		cache[2] = ans;
-		cache[1] = NULL;
-		full[2].notify_all(), empty[1].notify_all();
-	}
+	if (cache[2] != NULL || cache[1] == NULL) return;
+	statement *ans = cache[1]->EXEC();
+	if (ans == NULL) return;
+	cache[2] = ans;
+	cache[1] = NULL;
 }
 
 void Program::MA()
 {
-	while(1)
-	{
-//		std::this_thread::sleep_for(std::chrono::milliseconds(900));
-		std::unique_lock<mutex> lock2(_lock[2]);
-		while (cache[2] == NULL) full[2].wait(lock2);
-//		while (cache[2] == NULL) continue;
-		std::unique_lock<mutex> lock3(_lock[3]);
-		while (cache[3] != NULL) empty[3].wait(lock3);
-//		while (cache[3] != NULL) continue;
-		statement *ans = cache[2]->MA();
-		cache[3] = ans;
-		cache[2] = NULL;
-		full[3].notify_all(), empty[2].notify_all();
-	}
+	if (cache[3] != NULL || cache[2] == NULL) return;
+	statement *ans = cache[2]->MA();
+	if (ans == NULL) return;
+	cache[3] = ans;
+	cache[2] = NULL;
 }
 
 void Program::WB()
 {
-//	std::ofstream fout("/Users/fengsiyuan/Onedrive/OI/SJTU/mips/Test.out");
-	while(1)
-	{
-		std::unique_lock<mutex> lock3(_lock[3]);
-		while (cache[3] == NULL) full[3].wait(lock3);
-//		while (cache[3] == NULL) continue;
-		cache[3]->WB();
-		delete cache[3]; cache[3] = NULL;
-		empty[3].notify_all();
-	}
+	
+	if (cache[3] == NULL) return;
+	statement *ans = cache[3]->WB();
+	if (ans == NULL) return;
+	delete cache[3]; cache[3] = NULL;
+	
 }
 
 int Program::run()
 {
 	cache[0] = cache[1] = cache[2] = cache[3] = NULL;
-//	mem.lock = 0;
 	cpu["$PC"] = getLabel("main");
 //
-	globl.lock();
-	thread _WB(std::bind(&Program::WB, this)); _WB.detach();
-	thread _MA(std::bind(&Program::MA, this)); _MA.detach();
-	thread _EX(std::bind(&Program::EX, this)); _EX.detach();
-	thread _ID(std::bind(&Program::ID, this)); _ID.detach();
-	thread _IF(std::bind(&Program::IF, this)); _IF.detach();
-	
-	globl.lock();
-	globl.unlock();
-	cerr << endl << clocks << endl;
+	globl = 0;
+//	thread _WB(std::bind(&Program::WB, this)); _WB.detach();
+//	thread _MA(std::bind(&Program::MA, this)); _MA.detach();
+//	thread _EX(std::bind(&Program::EX, this)); _EX.detach();
+//	thread _ID(std::bind(&Program::ID, this)); _ID.detach();
+//	thread _IF(std::bind(&Program::IF, this)); _IF.detach();
+//	std::ofstream fout("/Users/fengsiyuan/Onedrive/OI/SJTU/mips/Test.out");
+
+	while (globl == 0)
+	{
+		WB();
+		MA();
+		EX();
+		ID();
+		IF();
+//		for (int i = 0; i < 35; i++) fout << cpu[i] << " ";
+//		fout<<endl;
+	}
+//	cerr << endl << clocks << endl;
 	return globl_return;
 }

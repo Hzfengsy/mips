@@ -32,18 +32,16 @@ protected:
 	CPU &cpu;
 	Program *pro;
 	Memory &mem;
-	istream &is; ostream &os;
-	int data[3], num;
-	OP op; bool imm;
+	int data[3], state[3];
+	OP op;
 public:
 	statement(Program *_pro);
-	void loadcache(int index);
-	void loadcache(string st, int i);
+	bool loadcache(int index);
+	bool loadcache(string st, int i);
 	void lockcache(int index);
 	void lockcache(string st);
 	void writecache(int index, int x);
 	void writecacheimm(int index, int x);
-//	void delcom();
 	statement* IF();
 	statement* ID();
 	virtual statement* EXEC();
