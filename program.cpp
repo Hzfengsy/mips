@@ -233,6 +233,6 @@ int Program::run()
 	
 	globl.lock();
 	globl.unlock();
-	cerr << endl << clocks << endl;
+//	cerr << endl << clocks << endl;
 	return globl_return;
 }
