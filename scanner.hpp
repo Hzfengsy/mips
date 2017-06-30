@@ -13,6 +13,13 @@
 #include "exception.hpp"
 using std::string;
 
+enum OP
+{
+	ADD, SUB, MUL, MULU, DIV, DIVU, XOR, NEG, REM, REMU, LI, SEQ, SGE, SGT, SLE, SLT, SNE,
+	JMP, JMPL, BEQ, BNE, BGE, BGT, BLE, BLT, BEQZ, BNEZ, BGEZ, BGTZ, BLEZ, BLTZ, LA,
+	LB, LH, LW, SB, SH, SW, MOVE, MFHI, MFLO, NOP, SYS
+};
+
 class scanner
 {
 	string st;

@@ -120,7 +120,9 @@ bool Decoder::processLine()
 
 void Decoder::process()
 {
+	command::inti();
 	while (processLine());
+	pro.exchengLabel();
 }
 
 

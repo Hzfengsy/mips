@@ -10,6 +10,7 @@
 #define statement_hpp
 
 #include "program.hpp"
+#include "scanner.hpp"
 #include "CPU.hpp"
 #include <iostream>
 using std::ostream;
@@ -20,6 +21,7 @@ typedef unsigned int uint;
 typedef long long ll;
 typedef unsigned long long ull;;
 
+
 class Program;
 class command;
 class statement;
@@ -28,19 +30,20 @@ class statement
 {
 protected:
 	CPU &cpu;
-	command *com;
 	Program *pro;
-	Memory *mem;
+	Memory &mem;
 	istream &is; ostream &os;
+	int data[3], num;
+	OP op; bool imm;
 public:
-	statement(CPU &_cpu, Program *_pro, Memory *_men, istream &_is, ostream &_os);
-	bool loadcache(int index);
-	bool loadcache(string st, int i);
+	statement(Program *_pro);
+	void loadcache(int index);
+	void loadcache(string st, int i);
 	void lockcache(int index);
 	void lockcache(string st);
 	void writecache(int index, int x);
-	void writecache(string st, int x);
-	void delcom();
+	void writecacheimm(int index, int x);
+//	void delcom();
 	statement* IF();
 	statement* ID();
 	virtual statement* EXEC();

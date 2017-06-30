@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
 	CPU cpu;
 	Program program(cpu, memory, cin, cout);
 	CPU::inti();
-	ifstream fin("/Users/fengsiyuan/Onedrive/OI/SJTU/mips/mips/testsuit-1/heapsort-5100379110-daibo.s");
+	ifstream fin("/Users/fengsiyuan/Onedrive/OI/SJTU/mips/mips/testsuit-1/pi-5090379042-jiaxiao.s");
 //	ifstream fin(argv[1]);
 	Decoder text(fin, memory, program);
 	text.process();
