@@ -225,11 +225,11 @@ int Program::run()
 	cpu["$PC"] = getLabel("main");
 //
 	globl.lock();
-	thread _WB(std::bind(&Program::WB, this)); _WB.join();
-	thread _MA(std::bind(&Program::MA, this)); _MA.join();
-	thread _EX(std::bind(&Program::EX, this)); _EX.join();
-	thread _ID(std::bind(&Program::ID, this)); _ID.join();
-	thread _IF(std::bind(&Program::IF, this)); _IF.join();
+	thread _WB(std::bind(&Program::WB, this)); _WB.detach();
+	thread _MA(std::bind(&Program::MA, this)); _MA.detach();
+	thread _EX(std::bind(&Program::EX, this)); _EX.detach();
+	thread _ID(std::bind(&Program::ID, this)); _ID.detach();
+	thread _IF(std::bind(&Program::IF, this)); _IF.detach();
 	
 	globl.lock();
 	globl.unlock();
