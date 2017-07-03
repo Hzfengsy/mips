@@ -10,14 +10,6 @@
 
 statement::statement(Program *_pro)	: pro(_pro), cpu(_pro->cpu), mem(pro->mem) {}
 
-statement* statement::IF()
-{
-	if (pro->hazard) return NULL;
-	op = pro->getcommand(cpu[32]++, data, state);
-//	cerr << cpu["$PC"] - 1 << " " << op << " " << data[0] << " " << data[1] << endl;
-	return this;
-}
-
 inline bool statement::loadcache(int i)
 {
 	if (state[i] == 2) return 1;
@@ -52,412 +44,567 @@ inline void statement::writecacheimm(int i, int x)
 	cpu.setused(i, 0);
 }
 
-statement* statement::ID()
+statement* statement::IF(Program *pro)
 {
-	switch (op)
-	{
+	statement *t;
+	OP op = pro->getOp(pro->cpu[32]);
+	
+	//	cerr << cpu["$PC"] - 1 << " " << op << " " << data[0] << " " << data[1] << endl;
+	switch (op) {
 		case ADD:
-			if (!loadcache(1) || !loadcache(2)) return NULL;
-			lockcache(0);
-			return new add(*this);
+			t = new add(pro);
 			break;
 		case SUB:
-			if (!loadcache(1) || !loadcache(2)) return NULL;
-			lockcache(0);
-			return new sub(*this);
+			t = new sub(pro);
 			break;
 		case MUL:
+			t = new mul(pro);
+			break;
 		case MULU:
+			t = new mulu(pro);
+			break;
 		case DIV:
+			t = new Div(pro);
+			break;
 		case DIVU:
-			if (state[2] == 0)
-			{
-				if (!loadcache(0) || !loadcache(1)) return NULL;
-				lockcache("$HI"), lockcache("$LO");
-			}
-			else
-			{
-				if (!loadcache(1) || !loadcache(2)) return NULL;
-				lockcache(0);
-			}
-			if (op == MUL) return new mul(*this);
-			if (op == MULU) return new mulu(*this);
-			if (op == DIV) return new Div(*this);
-			if (op == DIVU) return new Divu(*this);
+			t = new Divu(pro);
 			break;
 		case XOR:
-			if (!loadcache(1) || !loadcache(2)) return NULL;
-			lockcache(0);
-			return new Xor(*this);
+			t = new Xor(pro);
 			break;
 		case NEG:
-			if (!loadcache(1)) return NULL;
-			lockcache(0);
-			return new neg(*this);
+			t = new neg(pro);
 			break;
 		case REM:
-			if (!loadcache(1) || !loadcache(2)) return NULL;
-			lockcache(0);
-			return new rem(*this);
+			t = new rem(pro);
 			break;
 		case REMU:
-			if (!loadcache(1) || !loadcache(2)) return NULL;
-			lockcache(0);
-			return new remu(*this);
+			t = new remu(pro);
 			break;
 		case LI:
-			lockcache(0);
-			return new li(*this);
+			t = new li(pro);
 			break;
 		case SEQ:
-			if (!loadcache(1) || !loadcache(2)) return NULL;
-			lockcache(0);
-			return new seq(*this);
+			t = new seq(pro);
 			break;
 		case SGE:
-			if (!loadcache(1) || !loadcache(2)) return NULL;
-			lockcache(0);
-			return new sge(*this);
+			t = new sge(pro);
 			break;
 		case SGT:
-			if (!loadcache(1) || !loadcache(2)) return NULL;
-			lockcache(0);
-			return new sgt(*this);
+			t = new sgt(pro);
 			break;
 		case SLE:
-			if (!loadcache(1) || !loadcache(2)) return NULL;
-			lockcache(0);
-			return new sle(*this);
+			t = new sle(pro);
 			break;
 		case SLT:
-			if (!loadcache(1) || !loadcache(2)) return NULL;
-			lockcache(0);
-			return new slt(*this);
+			t = new slt(pro);
 			break;
 		case SNE:
-			if (!loadcache(1) || !loadcache(2)) return NULL;
-			lockcache(0);
-			return new sne(*this);
+			t = new sne(pro);
 			break;
 		case JMP:
-			if (!loadcache(0)) return NULL;
-			pro->hazard = 1;
-			lockcache("$PC");
-			return new jmp(*this);
+			t = new jmp(pro);
 			break;
 		case JMPL:
-			if (!loadcache(0) || !loadcache("$PC", 1)) return NULL;
-			pro->hazard = 1;
-			lockcache("$PC");
-			lockcache("$ra");
-			return new jmpl(*this);
+			t = new jmpl(pro);
 			break;
 		case BEQ:
-			if (!loadcache(0) || !loadcache(1)) return NULL;
-			lockcache("$PC");
-			pro->hazard = 1;
-			return new beq(*this);
+			t = new beq(pro);
 			break;
 		case BNE:
-			if (!loadcache(0) || !loadcache(1)) return NULL;
-			lockcache("$PC");
-			pro->hazard = 1;
-			return new bne(*this);
+			t = new bne(pro);
 			break;
 		case BGE:
-			if (!loadcache(0) || !loadcache(1)) return NULL;
-			lockcache("$PC");
-			pro->hazard = 1;
-			return new bge(*this);
+			t = new bge(pro);
 			break;
 		case BLE:
-			if (!loadcache(0) || !loadcache(1)) return NULL;
-			lockcache("$PC");
-			pro->hazard = 1;
-			return new ble(*this);
+			t = new ble(pro);
 			break;
 		case BGT:
-			if (!loadcache(0) || !loadcache(1)) return NULL;
-			lockcache("$PC");
-			pro->hazard = 1;
-			return new bgt(*this);
+			t = new bgt(pro);
 			break;
 		case BLT:
-			if (!loadcache(0) || !loadcache(1)) return NULL;
-			lockcache("$PC");
-			pro->hazard = 1;
-			return new blt(*this);
+			t = new blt(pro);
 			break;
 		case BEQZ:
-			if (!loadcache(0)) return NULL;
-			data[2] = data[1];
-			data[1] = 0;
-			lockcache("$PC");
-			pro->hazard = 1;
-			return new beq(*this);
+			t = new beqz(pro);
 			break;
 		case BNEZ:
-			if (!loadcache(0)) return NULL;
-			data[2] = data[1];
-			data[1] = 0;
-			lockcache("$PC");
-			pro->hazard = 1;
-			return new bne(*this);
+			t = new bnez(pro);
 			break;
 		case BGEZ:
-			if (!loadcache(0)) return NULL;
-			data[2] = data[1];
-			data[1] = 0;
-			lockcache("$PC");
-			pro->hazard = 1;
-			return new bge(*this);
+			t = new bgez(pro);
 			break;
 		case BLEZ:
-			if (!loadcache(0)) return NULL;
-			data[2] = data[1];
-			data[1] = 0;
-			lockcache("$PC");
-			pro->hazard = 1;
-			return new ble(*this);
+			t = new blez(pro);
 			break;
 		case BGTZ:
-			if (!loadcache(0)) return NULL;
-			data[2] = data[1];
-			data[1] = 0;
-			lockcache("$PC");
-			pro->hazard = 1;
-			return new bgt(*this);
+			t = new bgtz(pro);
 			break;
 		case BLTZ:
-			if (!loadcache(0)) return NULL;
-			data[2] = data[1];
-			data[1] = 0;
-			lockcache("$PC");
-			pro->hazard = 1;
-			return new blt(*this);
+			t = new bltz(pro);
 			break;
 		case LA:
-			if (state[2] == 0) data[2] = 0;
-			else if (!loadcache(2)) return NULL;
-			lockcache(0);
-			return new la(*this);
+			t = new la(pro);
 			break;
 		case LB:
-			if (state[2] == 0) data[2] = 0;
-			else if (!loadcache(2)) return NULL;
-			lockcache(0);
-			return new load(*this, 1);
+			t = new load(pro, 1);
 			break;
 		case LH:
-			if (state[2] == 0) data[2] = 0;
-			else if (!loadcache(2)) return NULL;
-			lockcache(0);
-			return new load(*this, 2);
+			t = new load(pro, 2);
 			break;
 		case LW:
-			if (state[2] == 0) data[2] = 0;
-			else if (!loadcache(2)) return NULL;
-			lockcache(0);
-			return new load(*this, 4);
+			t = new load(pro, 4);
 			break;
 		case SB:
-			if (state[2] == 0) data[2] = 0;
-			else if (!loadcache(2)) return NULL;
-			if (!loadcache(0)) return NULL;
-			return new store(*this, 1);
+			t = new store(pro, 1);
 			break;
 		case SH:
-			if (state[2] == 0) data[2] = 0;
-			else if (!loadcache(2)) return NULL;
-			if (!loadcache(0)) return NULL;
-			return new store(*this, 2);
+			t = new store(pro, 2);
 			break;
 		case SW:
-			if (state[2] == 0) data[2] = 0;
-			else if (!loadcache(2)) return NULL;
-			if (!loadcache(0)) return NULL;
-			return new store(*this, 4);
+			t = new store(pro, 4);
 			break;
 		case MOVE:
-			if (!loadcache(1)) return NULL;
-			lockcache(0);
-			return new Move(*this);
+			t = new Move(pro);
 			break;
 		case MFHI:
-			if (!loadcache("$HI", 1)) return NULL;
-			lockcache(0);
-			return new Move(*this);
+			t = new mfhi(pro);
 			break;
 		case MFLO:
-			if (!loadcache("$LO", 1)) return NULL;
-			lockcache(0);
-			return new Move(*this);
+			t = new mflo(pro);
 			break;
 		case NOP:
-			return new nop(*this);
+			t = new nop(pro);
 		case SYS:
-			data[0] = 2;
-			data[1] = 4;
-			data[2] = 5;
-			state[0] = state[1] = state[2] = 1;
-			if (!loadcache(0) || !loadcache(1) || !loadcache(2)) return NULL;
-			lockcache("$v0");
-			pro->hazard = 1;
-			return new syscall(*this);
+			t = new syscall(pro);
 			break;
 		default:
 			throw invalid_program();
 			break;
 	}
-	return NULL;
+	t->op = pro->getcommand(pro->cpu[32]++, t->data, t->state);
+	return t;
 }
 
-statement* statement::EXEC() { throw runtime_error(); return this; }
+//statement* statement::ID()
+//{
+//	switch (op)
+//	{
+//		case ADD:
+//			if (!loadcache(1) || !loadcache(2)) return NULL;
+//			lockcache(0);
+//			return new add(*this);
+//			break;
+//		case SUB:
+//			if (!loadcache(1) || !loadcache(2)) return NULL;
+//			lockcache(0);
+//			return new sub(*this);
+//			break;
+//		case MUL:
+//		case MULU:
+//		case DIV:
+//		case DIVU:
+//			if (state[2] == 0)
+//			{
+//				if (!loadcache(0) || !loadcache(1)) return NULL;
+//				lockcache("$HI"), lockcache("$LO");
+//			}
+//			else
+//			{
+//				if (!loadcache(1) || !loadcache(2)) return NULL;
+//				lockcache(0);
+//			}
+//			if (op == MUL) return new mul(*this);
+//			if (op == MULU) return new mulu(*this);
+//			if (op == DIV) return new Div(*this);
+//			if (op == DIVU) return new Divu(*this);
+//			break;
+//		case XOR:
+//			if (!loadcache(1) || !loadcache(2)) return NULL;
+//			lockcache(0);
+//			return new Xor(*this);
+//			break;
+//		case NEG:
+//			if (!loadcache(1)) return NULL;
+//			lockcache(0);
+//			return new neg(*this);
+//			break;
+//		case REM:
+//			if (!loadcache(1) || !loadcache(2)) return NULL;
+//			lockcache(0);
+//			return new rem(*this);
+//			break;
+//		case REMU:
+//			if (!loadcache(1) || !loadcache(2)) return NULL;
+//			lockcache(0);
+//			return new remu(*this);
+//			break;
+//		case LI:
+//			lockcache(0);
+//			return new li(*this);
+//			break;
+//		case SEQ:
+//			if (!loadcache(1) || !loadcache(2)) return NULL;
+//			lockcache(0);
+//			return new seq(*this);
+//			break;
+//		case SGE:
+//			if (!loadcache(1) || !loadcache(2)) return NULL;
+//			lockcache(0);
+//			return new sge(*this);
+//			break;
+//		case SGT:
+//			if (!loadcache(1) || !loadcache(2)) return NULL;
+//			lockcache(0);
+//			return new sgt(*this);
+//			break;
+//		case SLE:
+//			if (!loadcache(1) || !loadcache(2)) return NULL;
+//			lockcache(0);
+//			return new sle(*this);
+//			break;
+//		case SLT:
+//			if (!loadcache(1) || !loadcache(2)) return NULL;
+//			lockcache(0);
+//			return new slt(*this);
+//			break;
+//		case SNE:
+//			if (!loadcache(1) || !loadcache(2)) return NULL;
+//			lockcache(0);
+//			return new sne(*this);
+//			break;
+//		case JMP:
+//			if (!loadcache(0)) return NULL;
+//			pro->hazard = 1;
+//			lockcache("$PC");
+//			return new jmp(*this);
+//			break;
+//		case JMPL:
+//			if (!loadcache(0) || !loadcache("$PC", 1)) return NULL;
+//			pro->hazard = 1;
+//			lockcache("$PC");
+//			lockcache("$ra");
+//			return new jmpl(*this);
+//			break;
+//		case BEQ:
+//			if (!loadcache(0) || !loadcache(1)) return NULL;
+//			lockcache("$PC");
+//			pro->hazard = 1;
+//			return new beq(*this);
+//			break;
+//		case BNE:
+//			if (!loadcache(0) || !loadcache(1)) return NULL;
+//			lockcache("$PC");
+//			pro->hazard = 1;
+//			return new bne(*this);
+//			break;
+//		case BGE:
+//			if (!loadcache(0) || !loadcache(1)) return NULL;
+//			lockcache("$PC");
+//			pro->hazard = 1;
+//			return new bge(*this);
+//			break;
+//		case BLE:
+//			if (!loadcache(0) || !loadcache(1)) return NULL;
+//			lockcache("$PC");
+//			pro->hazard = 1;
+//			return new ble(*this);
+//			break;
+//		case BGT:
+//			if (!loadcache(0) || !loadcache(1)) return NULL;
+//			lockcache("$PC");
+//			pro->hazard = 1;
+//			return new bgt(*this);
+//			break;
+//		case BLT:
+//			if (!loadcache(0) || !loadcache(1)) return NULL;
+//			lockcache("$PC");
+//			pro->hazard = 1;
+//			return new blt(*this);
+//			break;
+//		case BEQZ:
+//			if (!loadcache(0)) return NULL;
+//			data[2] = data[1];
+//			data[1] = 0;
+//			lockcache("$PC");
+//			pro->hazard = 1;
+//			return new beq(*this);
+//			break;
+//		case BNEZ:
+//			if (!loadcache(0)) return NULL;
+//			data[2] = data[1];
+//			data[1] = 0;
+//			lockcache("$PC");
+//			pro->hazard = 1;
+//			return new bne(*this);
+//			break;
+//		case BGEZ:
+//			if (!loadcache(0)) return NULL;
+//			data[2] = data[1];
+//			data[1] = 0;
+//			lockcache("$PC");
+//			pro->hazard = 1;
+//			return new bge(*this);
+//			break;
+//		case BLEZ:
+//			if (!loadcache(0)) return NULL;
+//			data[2] = data[1];
+//			data[1] = 0;
+//			lockcache("$PC");
+//			pro->hazard = 1;
+//			return new ble(*this);
+//			break;
+//		case BGTZ:
+//			if (!loadcache(0)) return NULL;
+//			data[2] = data[1];
+//			data[1] = 0;
+//			lockcache("$PC");
+//			pro->hazard = 1;
+//			return new bgt(*this);
+//			break;
+//		case BLTZ:
+//			if (!loadcache(0)) return NULL;
+//			data[2] = data[1];
+//			data[1] = 0;
+//			lockcache("$PC");
+//			pro->hazard = 1;
+//			return new blt(*this);
+//			break;
+//		case LA:
+//			if (state[2] == 0) data[2] = 0;
+//			else if (!loadcache(2)) return NULL;
+//			lockcache(0);
+//			return new la(*this);
+//			break;
+//		case LB:
+//			if (state[2] == 0) data[2] = 0;
+//			else if (!loadcache(2)) return NULL;
+//			lockcache(0);
+//			return new load(*this, 1);
+//			break;
+//		case LH:
+//			if (state[2] == 0) data[2] = 0;
+//			else if (!loadcache(2)) return NULL;
+//			lockcache(0);
+//			return new load(*this, 2);
+//			break;
+//		case LW:
+//			if (state[2] == 0) data[2] = 0;
+//			else if (!loadcache(2)) return NULL;
+//			lockcache(0);
+//			return new load(*this, 4);
+//			break;
+//		case SB:
+//			if (state[2] == 0) data[2] = 0;
+//			else if (!loadcache(2)) return NULL;
+//			if (!loadcache(0)) return NULL;
+//			return new store(*this, 1);
+//			break;
+//		case SH:
+//			if (state[2] == 0) data[2] = 0;
+//			else if (!loadcache(2)) return NULL;
+//			if (!loadcache(0)) return NULL;
+//			return new store(*this, 2);
+//			break;
+//		case SW:
+//			if (state[2] == 0) data[2] = 0;
+//			else if (!loadcache(2)) return NULL;
+//			if (!loadcache(0)) return NULL;
+//			return new store(*this, 4);
+//			break;
+//		case MOVE:
+//			if (!loadcache(1)) return NULL;
+//			lockcache(0);
+//			return new Move(*this);
+//			break;
+//		case MFHI:
+//			if (!loadcache("$HI", 1)) return NULL;
+//			lockcache(0);
+//			return new Move(*this);
+//			break;
+//		case MFLO:
+//			if (!loadcache("$LO", 1)) return NULL;
+//			lockcache(0);
+//			return new Move(*this);
+//			break;
+//		case NOP:
+//			return new nop(*this);
+//		case SYS:
+//			data[0] = 2;
+//			data[1] = 4;
+//			data[2] = 5;
+//			state[0] = state[1] = state[2] = 1;
+//			if (!loadcache(0) || !loadcache(1) || !loadcache(2)) return NULL;
+//			lockcache("$v0");
+//			pro->hazard = 1;
+//			return new syscall(*this);
+//			break;
+//		default:
+//			throw invalid_program();
+//			break;
+//	}
+//	return NULL;
+//}
+
+statement* statement::EX() { throw runtime_error(); return this; }
 statement* statement::MA() { throw runtime_error(); return this; }
 statement* statement::WB() { throw runtime_error(); return this; }
 
-add::add(const statement &x) : statement(x) {}
-statement* add::EXEC() { cache = data[1] + data[2], cpu.writetmp(0, data[0], cache); return this; }
-statement* add::MA() { cpu.writetmp(1, data[0], cache); return this; }
-statement* add::WB() { writecache(0, cache); return this; }
+statement* binary::ID()
+{
+	if (!loadcache(1) || !loadcache(2)) return NULL;
+	lockcache(0);
+	return this;
+}
+statement* binary::EX() { cpu.writetmp(0, data[0], cache); return this; }
+statement* binary::MA() { cpu.writetmp(1, data[0], cache); return this; }
+statement* binary::WB() { writecache(0, cache); return this; }
 
-sub::sub(const statement &x) : statement(x) {}
-statement* sub::EXEC() { cache = data[1] - data[2], cpu.writetmp(0, data[0], cache); return this; }
-statement* sub::MA() { cpu.writetmp(1, data[0], cache); return this; }
-statement* sub::WB() { writecache(0, cache); return this; }
+statement* bbase::ID()
+{
+	if (!loadcache(0) || !loadcache(1)) return NULL;
+	lockcache("$PC");
+	pro->hazard = 1;
+	return this;
+}
+statement* bbase::EX() { return this; }
+statement* bbase::MA() { return this; }
+statement* bbase::WB()
+{
+	if (cache) writecacheimm(32, data[2]);
+	else cpu.setused(32, 0);
+	pro->hazard = 0;
+	return this;
+}
 
-mul::mul(const statement &x) : statement(x) {}
-statement* mul::EXEC()
+statement* bbasez::ID()
+{
+	if (!loadcache(0)) return NULL;
+	data[2] = data[1];
+	data[1] = 0;
+	lockcache("$PC");
+	pro->hazard = 1;
+	return this;
+}
+
+statement* complex::ID()
+{
+	if (state[2] == 0)
+	{
+		if (!loadcache(0) || !loadcache(1)) return NULL;
+		lockcache("$HI"), lockcache("$LO");
+	}
+	else
+	{
+		if (!loadcache(1) || !loadcache(2)) return NULL;
+		lockcache(0);
+	}
+	return this;
+}
+statement* complex::EX() { if (state[2] != 0) cpu.writetmp(0, data[0], cache2); return this; }
+statement* complex::MA() { if (state[2] != 0) cpu.writetmp(1, data[0], cache2); return this; }
+statement* complex::WB()
+{
+	if (state[2] == 0) writecacheimm(33, cache1), writecacheimm(34, cache2);
+	else writecache(0, cache2);
+	return this;}
+
+statement* lbase::ID()
+{
+	if (state[2] == 0) data[2] = 0;
+	else if (!loadcache(2)) return NULL;
+	lockcache(0);
+	return this;
+}
+statement* lbase::EX() { cache = data[1] + data[2]; return this; }
+statement* lbase::MA() { cpu.writetmp(1, data[0], cache); return this; }
+statement* lbase::WB() { writecache(0, cache); return this; }
+
+statement* add::EX() { cache = data[1] + data[2]; return binary::EX(); }
+statement* sub::EX() { cache = data[1] - data[2]; return binary::EX(); }
+
+statement* mul::EX()
 {
 	ll ans;
 	if (state[2] == 0) ans = (ll)data[0] * data[1];
 	else ans = (ll)data[1] * data[2];
 	cache1 = ans >> 32 & 0xffffffff;
 	cache2 = ans & 0xffffffff;
-	if (state[2] != 0) cpu.writetmp(0, data[0], cache2);
-	return this;
-}
-statement* mul::MA() { if (state[2] != 0) cpu.writetmp(1, data[0], cache2); return this; }
-statement* mul::WB()
-{
-	if (state[2] == 0) writecacheimm(33, cache1), writecacheimm(34, cache2);
-	else writecache(0, cache2);
-	return this;
+	return complex::EX();
 }
 
-mulu::mulu(const statement &x) : statement(x) {}
-statement* mulu::EXEC()
+statement* mulu::EX()
 {
 	ull ans;
 	if (state[2] == 0) ans = (ull)data[0] * (ull)data[1];
 	else ans = (ull)data[1] * (ull)data[2];
 	cache1 = ans >> 32 & 0xffffffff;
 	cache2 = ans & 0xffffffff;
-	if (state[2] != 0) cpu.writetmp(0, data[0], cache2);
-	return this;
-}
-statement* mulu::MA() { if (state[2] != 0) cpu.writetmp(1, data[0], cache2); return this; }
-statement* mulu::WB()
-{
-	if (state[2] == 0) writecacheimm(33, cache1), writecacheimm(34, cache2);
-	else writecache(0, cache2);
-	return this;
-}
+	return complex::EX();
 
-Div::Div(const statement &x) : statement(x) {}
-statement* Div::EXEC()
+}
+statement* Div::EX()
 {
 	if (state[2] == 0) cache1 = data[0] % data[1], cache2 = data[0] / data[1];
 	else cache1 = data[1] % data[2], cache2 = data[1] / data[2];
-	if (state[2] != 0) cpu.writetmp(0, data[0], cache2);
-	return this;
+	return complex::EX();
 }
-statement* Div::MA() { if (state[2] != 0) cpu.writetmp(1, data[0], cache2); return this; }
-statement* Div::WB()
-{
-	if (state[2] == 0) writecacheimm(33, cache1), writecacheimm(34, cache2);
-	else writecache(0, cache2);
-	return this;
-}
-
-Divu::Divu(const statement &x) : statement(x) {}
-statement* Divu::EXEC()
+statement* Divu::EX()
 {
 	if (state[2] == 0) cache1 = (uint)data[0] % (uint)data[1], cache2 = (uint)data[0] / (uint)data[1];
 	else cache1 = (uint)data[1] % (uint)data[2], cache2 = (uint)data[1] / (uint)data[2];
-	if (state[2] != 0) cpu.writetmp(0, data[0], cache2);
-	return this;
+	return complex::EX();
+
 }
-statement* Divu::MA() { if (state[2] != 0) cpu.writetmp(1, data[0], cache2); return this; }
-statement* Divu::WB()
+
+statement* Xor::EX() { cache = data[1] ^ data[2]; return binary::EX(); }
+
+statement* neg::ID()
 {
-	if (state[2] == 0) writecacheimm(33, cache1), writecacheimm(34, cache2);
-	else writecache(0, cache2);
+	if (!loadcache(1)) return NULL;
+	lockcache(0);
 	return this;
 }
-
-Xor::Xor(const statement &x) : statement(x) {}
-statement* Xor::EXEC() { cache = data[1] ^ data[2], cpu.writetmp(0, data[0], cache); return this; }
-statement* Xor::MA() { cpu.writetmp(1, data[0], cache); return this; }
-statement* Xor::WB() { writecache(0, cache); return this; }
-
-neg::neg(const statement &x) : statement(x) {}
-statement* neg::EXEC() { cache = -data[1], cpu.writetmp(0, data[0], cache);	return this; }
+statement* neg::EX() { cache = -data[1], cpu.writetmp(0, data[0], cache);	return this; }
 statement* neg::MA() { cpu.writetmp(1, data[0], cache); return this; }
 statement* neg::WB() { writecache(0, cache); return this; }
 
-rem::rem(const statement &x) : statement(x) {}
-statement* rem::EXEC() { cache = data[1] % data[2], cpu.writetmp(0, data[0], cache); return this; }
-statement* rem::MA() { cpu.writetmp(1, data[0], cache); return this; }
-statement* rem::WB() { writecache(0, cache); return this; }
+statement* rem::EX() { cache = data[1] % data[2]; return binary::EX(); }
+statement* remu::EX() { cache = (uint)data[1] % (uint)data[2]; return binary::EX(); }
 
-remu::remu(const statement &x) : statement(x) {}
-statement* remu::EXEC() { cache = (uint)data[1] % (uint)data[2], cpu.writetmp(0, data[0], cache); return this; }
-statement* remu::MA() { cpu.writetmp(1, data[0], cache); return this; }
-statement* remu::WB() { writecache(0, cache); return this; }
-
-li::li(const statement &x) : statement(x) {}
-statement* li::EXEC() { cpu.writetmp(0, data[0], data[1]); return this; }
+statement* li::ID() { lockcache(0); return this; }
+statement* li::EX() { cpu.writetmp(0, data[0], data[1]); return this; }
 statement* li::MA() { cpu.writetmp(1, data[0], data[1]); return this; }
 statement* li::WB() { writecache(0, data[1]); return this;}
 
-seq::seq(const statement &x) : statement(x) {}
-statement* seq::EXEC() { cache = data[1] == data[2], cpu.writetmp(0, data[0], cache); return this; }
-statement* seq::MA() { cpu.writetmp(1, data[0], cache); return this; }
-statement* seq::WB() { writecache(0, cache); return this; }
+statement* seq::EX() { cache = data[1] == data[2]; return binary::EX(); }
+statement* sge::EX() { cache = data[1] >= data[2]; return binary::EX(); }
+statement* sgt::EX() { cache = data[1] > data[2];  return binary::EX(); }
+statement* sle::EX() { cache = data[1] <= data[2]; return binary::EX(); }
+statement* slt::EX() { cache = data[1] < data[2];  return binary::EX(); }
+statement* sne::EX() { cache = data[1] != data[2]; return binary::EX(); }
 
-sge::sge(const statement &x) : statement(x) {}
-statement* sge::EXEC() { cache = data[1] >= data[2], cpu.writetmp(0, data[0], cache); return this; }
-statement* sge::MA() { cpu.writetmp(1, data[0], cache); return this; }
-statement* sge::WB() { writecache(0, cache); return this; }
-
-sgt::sgt(const statement &x) : statement(x) {}
-statement* sgt::EXEC() { cache = data[1] > data[2], cpu.writetmp(0, data[0], cache); return this; }
-statement* sgt::MA() { cpu.writetmp(1, data[0], cache); return this; }
-statement* sgt::WB() { writecache(0, cache); return this; }
-
-sle::sle(const statement &x) : statement(x) {}
-statement* sle::EXEC() { cache = data[1] <= data[2], cpu.writetmp(0, data[0], cache); return this; }
-statement* sle::MA() { cpu.writetmp(1, data[0], cache); return this; }
-statement* sle::WB() { writecache(0, cache); return this; }
-
-slt::slt(const statement &x) : statement(x) {}
-statement* slt::EXEC() { cache = data[1] < data[2], cpu.writetmp(0, data[0], cache); return this; }
-statement* slt::MA() { cpu.writetmp(1, data[0], cache); return this; }
-statement* slt::WB() { writecache(0, cache); return this; }
-
-sne::sne(const statement &x) : statement(x) {}
-statement* sne::EXEC() { cache = data[1] != data[2], cpu.writetmp(0, data[0], cache); return this; }
-statement* sne::MA() { cpu.writetmp(1, data[0], cache); return this; }
-statement* sne::WB() { writecache(0, cache); return this; }
-
-jmp::jmp(const statement &x) : statement(x) {}
-statement* jmp::EXEC() { return this; }
+statement* jmp::ID()
+{
+	if (!loadcache(0)) return NULL;
+	pro->hazard = 1;
+	lockcache("$PC");
+	return this;
+}
+statement* jmp::EX() { return this; }
 statement* jmp::MA() { return this; }
 statement* jmp::WB() { writecacheimm(32, data[0]); pro->hazard = 0; return this; }
 
-jmpl::jmpl(const statement &x) : statement(x) {}
-statement* jmpl::EXEC() { return this; }
+statement* jmpl::ID()
+{
+	if (!loadcache(0) || !loadcache("$PC", 1)) return NULL;
+	pro->hazard = 1;
+	lockcache("$PC");
+	lockcache("$ra");
+	return this;
+}
+statement* jmpl::EX() { return this; }
 statement* jmpl::MA() { return this; }
 statement* jmpl::WB()
 {
@@ -467,99 +614,64 @@ statement* jmpl::WB()
 	return this;
 }
 
-beq::beq(const statement &x) : statement(x) {}
-statement* beq::EXEC() { cache = data[0] == data[1]; return this; }
-statement* beq::MA() { return this; }
-statement* beq::WB()
+statement* beq::EX() { cache = data[0] == data[1]; return bbase::EX(); }
+statement* bne::EX() { cache = data[0] != data[1]; return bbase::EX(); }
+statement* bge::EX() { cache = data[0] >= data[1]; return bbase::EX(); }
+statement* ble::EX() { cache = data[0] <= data[1]; return bbase::EX(); }
+statement* bgt::EX() { cache = data[0] > data[1];  return bbase::EX(); }
+statement* blt::EX() { cache = data[0] < data[1];  return bbase::EX(); }
+
+statement* beqz::EX() { cache = data[0] == data[1]; return bbasez::EX(); }
+statement* bnez::EX() { cache = data[0] != data[1]; return bbasez::EX(); }
+statement* bgez::EX() { cache = data[0] >= data[1]; return bbasez::EX(); }
+statement* blez::EX() { cache = data[0] <= data[1]; return bbasez::EX(); }
+statement* bgtz::EX() { cache = data[0] > data[1];  return bbasez::EX(); }
+statement* bltz::EX() { cache = data[0] < data[1];  return bbasez::EX(); }
+
+statement* la::EX() { cache = data[1] + data[2], cpu.writetmp(0, data[0], cache); return this; }
+statement* load::MA() { cache = mem.load(cache, num);  return lbase::MA(); }
+
+statement* store::ID()
 {
-	if (cache) writecacheimm(32, data[2]);
-	else cpu.setused(32, 0);
-	pro->hazard = 0;
+	if (state[2] == 0) data[2] = 0;
+	else if (!loadcache(2)) return NULL;
+	if (!loadcache(0)) return NULL;
 	return this;
 }
-
-bne::bne(const statement &x) : statement(x) {}
-statement* bne::EXEC() { cache = data[0] != data[1]; return this; }
-statement* bne::MA() { return this; }
-statement* bne::WB()
-{
-	if (cache) writecacheimm(32, data[2]);
-	else cpu.setused(32, 0);
-	pro->hazard = 0;
-	return this;
-}
-
-bge::bge(const statement &x) : statement(x) {}
-statement* bge::EXEC() { cache = data[0] >= data[1]; return this; }
-statement* bge::MA() { return this; }
-statement* bge::WB()
-{
-	if (cache) writecacheimm(32, data[2]);
-	else cpu.setused(32, 0);
-	pro->hazard = 0;
-	return this;
-}
-
-ble::ble(const statement &x) : statement(x) {}
-statement* ble::EXEC() { cache = data[0] <= data[1]; return this; }
-statement* ble::MA() { return this; }
-statement* ble::WB()
-{
-	if (cache) writecacheimm(32, data[2]);
-	else cpu.setused(32, 0);
-	pro->hazard = 0;
-	return this;
-}
-
-bgt::bgt(const statement &x) : statement(x) {}
-statement* bgt::EXEC() { cache = data[0] > data[1]; return this; }
-statement* bgt::MA() { return this; }
-statement* bgt::WB()
-{
-	if (cache) writecacheimm(32, data[2]);
-	else cpu.setused(32, 0);
-	pro->hazard = 0;
-	return this;
-}
-
-blt::blt(const statement &x) : statement(x) {}
-statement* blt::EXEC() { cache = data[0] < data[1]; return this; }
-statement* blt::MA() { return this; }
-statement* blt::WB()
-{
-	if (cache) writecacheimm(32, data[2]);
-	else cpu.setused(32, 0);
-	pro->hazard = 0;
-	return this;
-}
-
-la::la(const statement &x) : statement(x) {}
-statement* la::EXEC() { cache = data[1] + data[2], cpu.writetmp(0, data[0], cache); return this; }
-statement* la::MA() { cpu.writetmp(1, data[0], cache); return this; }
-statement* la::WB() { writecache(0, cache); return this; }
-
-load::load(const statement &x, int t) : statement(x), num(t) {}
-statement* load::EXEC() { cache = data[1] + data[2]; return this; }
-statement* load::MA() { cache = mem.load(cache, num), cpu.writetmp(1, data[0], cache); return this; }
-statement* load::WB() { writecache(0, cache); return this; }
-
-store::store(const statement &x, int t) : statement(x), num(t) {}
-statement* store::EXEC() { cache = data[1] + data[2]; return this; }
+statement* store::EX() { cache = data[1] + data[2]; return this; }
 statement* store::MA() { mem.store(cache, data[0] , num); return this; }
 statement* store::WB() { return this; }
 
-Move::Move(const statement &x) : statement(x) {}
-statement* Move::EXEC() { cache = data[1], cpu.writetmp(0, data[0], cache); return this; }
+statement* Move::ID()
+{
+	if (!loadcache(1)) return NULL;
+	lockcache(0);
+	return this;
+}
+statement* Move::EX() { cache = data[1], cpu.writetmp(0, data[0], cache); return this; }
 statement* Move::MA() { cpu.writetmp(1, data[0], cache); return this; }
 statement* Move::WB() { writecache(0, cache); return this; }
 
-nop::nop(const statement &x) : statement(x) {}
-statement* nop::EXEC() { return this; }
+statement* mfhi::ID() { data[1] = 33; return Move::ID(); }
+statement* mflo::ID() { data[1] = 34; return Move::ID(); }
+
+statement* nop::ID() { return this; }
+statement* nop::EX() { return this; }
 statement* nop::MA() { return this; }
 statement* nop::WB() { return this; }
 
-syscall::syscall(const statement &x) : statement(x) {}
-statement* syscall::EXEC()
+statement* syscall::ID()
+{
+	data[0] = 2;
+	data[1] = 4;
+	data[2] = 5;
+	state[0] = state[1] = state[2] = 1;
+	if (!loadcache(0) || !loadcache(1) || !loadcache(2)) return NULL;
+	lockcache("$v0");
+	pro->hazard = 1;
+	return this;
+}
+statement* syscall::EX()
 {
 	int v0 = data[0];
 	if (v0 == 1) pro->os << data[1];

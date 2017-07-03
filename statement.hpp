@@ -34,6 +34,7 @@ protected:
 	Memory &mem;
 	int data[3], state[3];
 	OP op;
+	int cache;
 public:
 	statement(Program *_pro);
 	bool loadcache(int index);
@@ -42,316 +43,345 @@ public:
 	void lockcache(string st);
 	void writecache(int index, int x);
 	void writecacheimm(int index, int x);
-	statement* IF();
-	statement* ID();
-	virtual statement* EXEC();
+	static statement* IF(Program *_pro);
+	virtual statement* ID() = 0;
+	virtual statement* EX() = 0;
+	virtual statement* MA() = 0;
+	virtual statement* WB() = 0;
+	virtual ~statement() {}
+};
+
+class binary : public statement
+{
+public:
+	binary(Program *pro) : statement(pro) {}
+	virtual statement* ID();
+	virtual statement* EX();
 	virtual statement* MA();
 	virtual statement* WB();
+	virtual ~binary() {}
 };
 
-class add : public statement
+class complex : public statement
 {
-	int cache;
-public:
-	add(const statement &x);
-	statement* EXEC();
-	statement* MA();
-	statement* WB();
-};
-
-class sub : public statement
-{
-	int cache;
-public:
-	sub(const statement &x);
-	statement* EXEC();
-	statement* MA();
-	statement* WB();
-};
-
-class mul : public statement
-{
+protected:
 	int cache1, cache2;
 public:
-	mul(const statement &x);
-	statement* EXEC();
-	statement* MA();
-	statement* WB();
+	complex(Program *pro) : statement(pro) {}
+	virtual statement* ID();
+	virtual statement* EX();
+	virtual statement* MA();
+	virtual statement* WB();
+	virtual ~complex() {}
 };
 
-class mulu : public statement
+class bbase : public statement
 {
-	int cache1, cache2;
 public:
-	mulu(const statement &x);
-	statement* EXEC();
-	statement* MA();
-	statement* WB();
+	bbase(Program *pro) : statement(pro) {}
+	virtual statement* ID();
+	virtual statement* EX();
+	virtual statement* MA();
+	virtual statement* WB();
+	virtual ~bbase() {}
 };
 
-class Div : public statement
+class bbasez : public bbase
 {
-	int cache1, cache2;
 public:
-	Div(const statement &x);
-	statement* EXEC();
-	statement* MA();
-	statement* WB();
+	bbasez(Program *pro) : bbase(pro) {}
+	virtual statement* ID();
+	virtual ~bbasez() {}
 };
 
-class Divu : public statement
+class lbase : public statement
 {
-	int cache1, cache2;
 public:
-	Divu(const statement &x);
-	statement* EXEC();
-	statement* MA();
-	statement* WB();
+	lbase(Program *pro) : statement(pro) {}
+	virtual statement* ID();
+	virtual statement* EX();
+	virtual statement* MA();
+	virtual statement* WB();
+	virtual ~lbase() {}
 };
 
-class Xor : public statement
+class add : public binary
 {
-	int cache;
 public:
-	Xor(const statement &x);
-	statement* EXEC();
-	statement* MA();
-	statement* WB();
+	add(Program *pro) : binary(pro) {}
+	statement* EX();
+};
+class sub : public binary
+{
+public:
+	sub(Program *pro) : binary(pro) {}
+	statement* EX();
+};
+
+class mul : public complex
+{
+public:
+	mul(Program *pro) : complex(pro) {}
+	statement* EX();
+};
+class mulu : public complex
+{
+public:
+	mulu(Program *pro) : complex(pro) {}
+	statement* EX();
+};
+class Div : public complex
+{
+public:
+	Div(Program *pro) : complex(pro) {}
+	statement* EX();
+};
+class Divu : public complex
+{
+public:
+	Divu(Program *pro) : complex(pro) {}
+	statement* EX();
+};
+
+class Xor : public binary
+{
+public:
+	Xor(Program *pro) : binary(pro) {}
+	statement* EX();
 };
 
 class neg : public statement
 {
-	int cache;
 public:
-	neg(const statement &x);
-	statement* EXEC();
+	neg(Program *pro) : statement(pro) {}
+	statement* ID();
+	statement* EX();
 	statement* MA();
 	statement* WB();
 };
 
-class rem : public statement
+class rem : public binary
 {
-	int cache;
 public:
-	rem(const statement &x);
-	statement* EXEC();
-	statement* MA();
-	statement* WB();
+	rem(Program *pro) : binary(pro) {}
+	statement* EX();
 };
-
-class remu : public statement
+class remu : public binary
 {
-	int cache;
 public:
-	remu(const statement &x);
-	statement* EXEC();
-	statement* MA();
-	statement* WB();
+	remu(Program *pro) : binary(pro) {}
+	statement* EX();
 };
 
 class li : public statement
 {
 public:
-	li(const statement &x);
-	statement* EXEC();
+	li(Program *pro) : statement(pro) {}
+	statement* ID();
+	statement* EX();
 	statement* MA();
 	statement* WB();
 };
 
-class seq : public statement
+class seq : public binary
 {
-	int cache;
 public:
-	seq(const statement &x);
-	statement* EXEC();
-	statement* MA();
-	statement* WB();
+	seq(Program *pro) : binary(pro) {}
+	statement* EX();
 };
-
-class sge : public statement
+class sge : public binary
 {
-	int cache;
 public:
-	sge(const statement &x);
-	statement* EXEC();
-	statement* MA();
-	statement* WB();
+	sge(Program *pro) : binary(pro) {}
+	statement* EX();
 };
-
-class sgt : public statement
+class sgt : public binary
 {
-	int cache;
 public:
-	sgt(const statement &x);
-	statement* EXEC();
-	statement* MA();
-	statement* WB();
+	sgt(Program *pro) : binary(pro) {}
+	statement* EX();
 };
-
-class sle : public statement
+class sle : public binary
 {
-	int cache;
 public:
-	sle(const statement &x);
-	statement* EXEC();
-	statement* MA();
-	statement* WB();
+	sle(Program *pro) : binary(pro) {}
+	statement* EX();
 };
-
-class slt : public statement
+class slt : public binary
 {
-	int cache;
 public:
-	slt(const statement &x);
-	statement* EXEC();
-	statement* MA();
-	statement* WB();
+	slt(Program *pro) : binary(pro) {}
+	statement* EX();
 };
-
-class sne : public statement
+class sne : public binary
 {
-	int cache;
 public:
-	sne(const statement &x);
-	statement* EXEC();
-	statement* MA();
-	statement* WB();
+	sne(Program *pro) : binary(pro) {}
+	statement* EX();
 };
 
 class jmp : public statement
 {
 public:
-	jmp(const statement &x);
-	statement* EXEC();
+	jmp(Program *pro) : statement(pro) {}
+	statement* ID();
+	statement* EX();
 	statement* MA();
 	statement* WB();
 };
-
 class jmpl : public statement
 {
 public:
-	jmpl(const statement &x);
-	statement* EXEC();
+	jmpl(Program *pro) : statement(pro) {}
+	statement* ID();
+	statement* EX();
 	statement* MA();
 	statement* WB();
 };
 
-class beq : public statement
+class beq : public bbase
 {
-	int cache;
 public:
-	beq(const statement &x);
-	statement* EXEC();
-	statement* MA();
-	statement* WB();
+	beq(Program *pro) : bbase(pro) {}
+	statement* EX();
+};
+class bne : public bbase
+{
+public:
+	bne(Program *pro) : bbase(pro) {}
+	statement* EX();
+};
+class bge : public bbase
+{
+public:
+	bge(Program *pro) : bbase(pro) {}
+	statement* EX();
+};
+class ble : public bbase
+{
+public:
+	ble(Program *pro) : bbase(pro) {}
+	statement* EX();
 };
 
-class bne : public statement
+class bgt : public bbase
 {
-	int cache;
 public:
-	bne(const statement &x);
-	statement* EXEC();
-	statement* MA();
-	statement* WB();
+	bgt(Program *pro) : bbase(pro) {}
+	statement* EX();
+};
+class blt : public bbase
+{
+public:
+	blt(Program *pro) : bbase(pro) {}
+	statement* EX();
 };
 
-class bge : public statement
+class beqz : public bbasez
 {
-	int cache;
 public:
-	bge(const statement &x);
-	statement* EXEC();
-	statement* MA();
-	statement* WB();
+	beqz(Program *pro) : bbasez(pro) {}
+	statement* EX();
+};
+class bnez : public bbasez
+{
+public:
+	bnez(Program *pro) : bbasez(pro) {}
+	statement* EX();
+};
+class bgez : public bbasez
+{
+public:
+	bgez(Program *pro) : bbasez(pro) {}
+	statement* EX();
+};
+class blez : public bbasez
+{
+public:
+	blez(Program *pro) : bbasez(pro) {}
+	statement* EX();
 };
 
-class ble : public statement
+class bgtz : public bbasez
 {
-	int cache;
 public:
-	ble(const statement &x);
-	statement* EXEC();
-	statement* MA();
-	statement* WB();
+	bgtz(Program *pro) : bbasez(pro) {}
+	statement* EX();
+};
+class bltz : public bbasez
+{
+public:
+	bltz(Program *pro) : bbasez(pro) {}
+	statement* EX();
 };
 
-class bgt : public statement
+class load : public lbase
 {
-	int cache;
+	int num;
 public:
-	bgt(const statement &x);
-	statement* EXEC();
+	load(Program *pro, int t) : lbase(pro), num(t) {}
 	statement* MA();
-	statement* WB();
 };
 
-class blt : public statement
+class la : public lbase
 {
-	int cache;
 public:
-	blt(const statement &x);
-	statement* EXEC();
-	statement* MA();
-	statement* WB();
-};
-
-class load : public statement
-{
-	int cache, num;
-public:
-	load(const statement &x, int t);
-	statement* EXEC();
-	statement* MA();
-	statement* WB();
-};
-
-class la : public statement
-{
-	int cache;
-public:
-	la(const statement &x);
-	statement* EXEC();
-	statement* MA();
-	statement* WB();
+	la(Program *pro) : lbase(pro) {}
+	statement* EX();
 };
 
 class store : public statement
 {
-	int cache, num;
+	int num;
 public:
-	store(const statement &x, int t);
-	statement* EXEC();
+	store(Program *pro, int t) : statement(pro), num(t) {}
+	statement* ID();
+	statement* EX();
 	statement* MA();
 	statement* WB();
 };
 
 class Move : public statement
 {
-	int cache;
 public:
-	Move(const statement &x);
-	statement* EXEC();
-	statement* MA();
-	statement* WB();
+	Move(Program *pro) : statement(pro) {}
+	virtual statement* ID();
+	virtual statement* EX();
+	virtual statement* MA();
+	virtual statement* WB();
+};
+
+class mfhi : public Move
+{
+public:
+	mfhi(Program *pro) : Move(pro) {}
+	statement* ID();
+};
+
+class mflo : public Move
+{
+public:
+	mflo(Program *pro) : Move(pro) {}
+	statement* ID();
 };
 
 class nop : public statement
 {
 public:
-	nop(const statement &x);
-	statement* EXEC();
+	nop(Program *pro) : statement(pro) {}
+	statement* ID();
+	statement* EX();
 	statement* MA();
 	statement* WB();
 };
 
 class syscall : public statement
 {
-	int cache;
 	string cachestr;
 public:
-	syscall(const statement &x);
-	statement* EXEC();
+	syscall(Program *pro) : statement(pro) {}
+	statement* ID();
+	statement* EX();
 	statement* MA();
 	statement* WB();
 };

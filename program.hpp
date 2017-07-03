@@ -76,6 +76,7 @@ public:
 	int getLabel(const string &Label);
 	
 	OP getcommand(int index, int data[], int state[]);
+	OP getOp(int index);
 	
 	command* getcommand(const string &label);
 	

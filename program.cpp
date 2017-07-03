@@ -119,6 +119,8 @@ OP Program::getcommand(int index, int data[], int state[3])
 	return commands[index].op;
 }
 
+OP Program::getOp(int index) { return commands[index].op; }
+
 command* Program::getcommand(const string &label) { return new command(commands[getLabel(label)]); }
 
 void Program::exchengLabel()
@@ -136,10 +138,10 @@ void Program::exchengLabel()
 void Program::IF()
 {
 	if (cache[0] != NULL) return;
-	statement *st = new statement(this);
-	statement *ans = st->IF();
+	if (hazard) return;
+	statement *ans = statement::IF(this);
 	if (ans) cache[0] = ans;
-	else delete st;
+	else delete ans;
 }
 
 void Program::ID()
@@ -148,13 +150,13 @@ void Program::ID()
 	statement *ans = cache[0]->ID();
 	if (ans == NULL) return;
 	cache[1] = ans;
-	delete cache[0]; cache[0] = NULL;
+	cache[0] = NULL;
 }
 
 void Program::EX()
 {
 	if (cache[2] != NULL || cache[1] == NULL) return;
-	statement *ans = cache[1]->EXEC();
+	statement *ans = cache[1]->EX();
 	if (ans == NULL) return;
 	cache[2] = ans;
 	cache[1] = NULL;
