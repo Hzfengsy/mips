@@ -194,6 +194,7 @@ int Program::run()
 
 	while (globl == 0)
 	{
+		cpu.cleantmp(0), cpu.cleantmp(1);
 		WB();
 		MA();
 		EX();

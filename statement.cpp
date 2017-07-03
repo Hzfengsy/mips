@@ -149,6 +149,7 @@ statement* statement::ID()
 			if (!loadcache(0) || !loadcache("$PC", 1)) return NULL;
 			pro->hazard = 1;
 			lockcache("$PC");
+			lockcache("$ra");
 			return new jmpl(*this);
 			break;
 		case BEQ:
@@ -316,13 +317,13 @@ statement* statement::MA() { throw runtime_error(); return this; }
 statement* statement::WB() { throw runtime_error(); return this; }
 
 add::add(const statement &x) : statement(x) {}
-statement* add::EXEC() { cache = data[1] + data[2]; return this; }
-statement* add::MA() { return this; }
+statement* add::EXEC() { cache = data[1] + data[2], cpu.writetmp(0, data[0], cache); return this; }
+statement* add::MA() { cpu.writetmp(1, data[0], cache); return this; }
 statement* add::WB() { writecache(0, cache); return this; }
 
 sub::sub(const statement &x) : statement(x) {}
-statement* sub::EXEC() { cache = data[1] - data[2]; return this; }
-statement* sub::MA() { return this; }
+statement* sub::EXEC() { cache = data[1] - data[2], cpu.writetmp(0, data[0], cache); return this; }
+statement* sub::MA() { cpu.writetmp(1, data[0], cache); return this; }
 statement* sub::WB() { writecache(0, cache); return this; }
 
 mul::mul(const statement &x) : statement(x) {}
@@ -333,9 +334,10 @@ statement* mul::EXEC()
 	else ans = (ll)data[1] * data[2];
 	cache1 = ans >> 32 & 0xffffffff;
 	cache2 = ans & 0xffffffff;
+	if (state[2] != 0) cpu.writetmp(0, data[0], cache2);
 	return this;
 }
-statement* mul::MA() { return this; }
+statement* mul::MA() { if (state[2] != 0) cpu.writetmp(1, data[0], cache2); return this; }
 statement* mul::WB()
 {
 	if (state[2] == 0) writecacheimm(33, cache1), writecacheimm(34, cache2);
@@ -351,9 +353,10 @@ statement* mulu::EXEC()
 	else ans = (ull)data[1] * (ull)data[2];
 	cache1 = ans >> 32 & 0xffffffff;
 	cache2 = ans & 0xffffffff;
+	if (state[2] != 0) cpu.writetmp(0, data[0], cache2);
 	return this;
 }
-statement* mulu::MA() { return this; }
+statement* mulu::MA() { if (state[2] != 0) cpu.writetmp(1, data[0], cache2); return this; }
 statement* mulu::WB()
 {
 	if (state[2] == 0) writecacheimm(33, cache1), writecacheimm(34, cache2);
@@ -366,9 +369,10 @@ statement* Div::EXEC()
 {
 	if (state[2] == 0) cache1 = data[0] % data[1], cache2 = data[0] / data[1];
 	else cache1 = data[1] % data[2], cache2 = data[1] / data[2];
+	if (state[2] != 0) cpu.writetmp(0, data[0], cache2);
 	return this;
 }
-statement* Div::MA() { return this; }
+statement* Div::MA() { if (state[2] != 0) cpu.writetmp(1, data[0], cache2); return this; }
 statement* Div::WB()
 {
 	if (state[2] == 0) writecacheimm(33, cache1), writecacheimm(34, cache2);
@@ -381,9 +385,10 @@ statement* Divu::EXEC()
 {
 	if (state[2] == 0) cache1 = (uint)data[0] % (uint)data[1], cache2 = (uint)data[0] / (uint)data[1];
 	else cache1 = (uint)data[1] % (uint)data[2], cache2 = (uint)data[1] / (uint)data[2];
+	if (state[2] != 0) cpu.writetmp(0, data[0], cache2);
 	return this;
 }
-statement* Divu::MA() { return this; }
+statement* Divu::MA() { if (state[2] != 0) cpu.writetmp(1, data[0], cache2); return this; }
 statement* Divu::WB()
 {
 	if (state[2] == 0) writecacheimm(33, cache1), writecacheimm(34, cache2);
@@ -392,58 +397,58 @@ statement* Divu::WB()
 }
 
 Xor::Xor(const statement &x) : statement(x) {}
-statement* Xor::EXEC() { cache = data[1] ^ data[2]; return this; }
-statement* Xor::MA() { return this; }
+statement* Xor::EXEC() { cache = data[1] ^ data[2], cpu.writetmp(0, data[0], cache); return this; }
+statement* Xor::MA() { cpu.writetmp(1, data[0], cache); return this; }
 statement* Xor::WB() { writecache(0, cache); return this; }
 
 neg::neg(const statement &x) : statement(x) {}
-statement* neg::EXEC() { cache = -data[1];	return this; }
-statement* neg::MA() { return this; }
+statement* neg::EXEC() { cache = -data[1], cpu.writetmp(0, data[0], cache);	return this; }
+statement* neg::MA() { cpu.writetmp(1, data[0], cache); return this; }
 statement* neg::WB() { writecache(0, cache); return this; }
 
 rem::rem(const statement &x) : statement(x) {}
-statement* rem::EXEC() { cache = data[1] % data[2]; return this; }
-statement* rem::MA() { return this; }
+statement* rem::EXEC() { cache = data[1] % data[2], cpu.writetmp(0, data[0], cache); return this; }
+statement* rem::MA() { cpu.writetmp(1, data[0], cache); return this; }
 statement* rem::WB() { writecache(0, cache); return this; }
 
 remu::remu(const statement &x) : statement(x) {}
-statement* remu::EXEC() { cache = (uint)data[1] % (uint)data[2]; return this; }
-statement* remu::MA() { return this; }
+statement* remu::EXEC() { cache = (uint)data[1] % (uint)data[2], cpu.writetmp(0, data[0], cache); return this; }
+statement* remu::MA() { cpu.writetmp(1, data[0], cache); return this; }
 statement* remu::WB() { writecache(0, cache); return this; }
 
 li::li(const statement &x) : statement(x) {}
-statement* li::EXEC() { return this; }
-statement* li::MA() { return this; }
+statement* li::EXEC() { cpu.writetmp(0, data[0], data[1]); return this; }
+statement* li::MA() { cpu.writetmp(1, data[0], data[1]); return this; }
 statement* li::WB() { writecache(0, data[1]); return this;}
 
 seq::seq(const statement &x) : statement(x) {}
-statement* seq::EXEC() { cache = data[1] == data[2]; return this; }
-statement* seq::MA() { return this; }
+statement* seq::EXEC() { cache = data[1] == data[2], cpu.writetmp(0, data[0], cache); return this; }
+statement* seq::MA() { cpu.writetmp(1, data[0], cache); return this; }
 statement* seq::WB() { writecache(0, cache); return this; }
 
 sge::sge(const statement &x) : statement(x) {}
-statement* sge::EXEC() { cache = data[1] >= data[2]; return this; }
-statement* sge::MA() { return this; }
+statement* sge::EXEC() { cache = data[1] >= data[2], cpu.writetmp(0, data[0], cache); return this; }
+statement* sge::MA() { cpu.writetmp(1, data[0], cache); return this; }
 statement* sge::WB() { writecache(0, cache); return this; }
 
 sgt::sgt(const statement &x) : statement(x) {}
-statement* sgt::EXEC() { cache = data[1] > data[2]; return this; }
-statement* sgt::MA() { return this; }
+statement* sgt::EXEC() { cache = data[1] > data[2], cpu.writetmp(0, data[0], cache); return this; }
+statement* sgt::MA() { cpu.writetmp(1, data[0], cache); return this; }
 statement* sgt::WB() { writecache(0, cache); return this; }
 
 sle::sle(const statement &x) : statement(x) {}
-statement* sle::EXEC() { cache = data[1] <= data[2]; return this; }
-statement* sle::MA() { return this; }
+statement* sle::EXEC() { cache = data[1] <= data[2], cpu.writetmp(0, data[0], cache); return this; }
+statement* sle::MA() { cpu.writetmp(1, data[0], cache); return this; }
 statement* sle::WB() { writecache(0, cache); return this; }
 
 slt::slt(const statement &x) : statement(x) {}
-statement* slt::EXEC() { cache = data[1] < data[2]; return this; }
-statement* slt::MA() { return this; }
+statement* slt::EXEC() { cache = data[1] < data[2], cpu.writetmp(0, data[0], cache); return this; }
+statement* slt::MA() { cpu.writetmp(1, data[0], cache); return this; }
 statement* slt::WB() { writecache(0, cache); return this; }
 
 sne::sne(const statement &x) : statement(x) {}
-statement* sne::EXEC() { cache = data[1] != data[2]; return this; }
-statement* sne::MA() { return this; }
+statement* sne::EXEC() { cache = data[1] != data[2], cpu.writetmp(0, data[0], cache); return this; }
+statement* sne::MA() { cpu.writetmp(1, data[0], cache); return this; }
 statement* sne::WB() { writecache(0, cache); return this; }
 
 jmp::jmp(const statement &x) : statement(x) {}
@@ -529,13 +534,13 @@ statement* blt::WB()
 }
 
 la::la(const statement &x) : statement(x) {}
-statement* la::EXEC() { cache = data[1] + data[2]; return this; }
-statement* la::MA() { return this; }
+statement* la::EXEC() { cache = data[1] + data[2], cpu.writetmp(0, data[0], cache); return this; }
+statement* la::MA() { cpu.writetmp(1, data[0], cache); return this; }
 statement* la::WB() { writecache(0, cache); return this; }
 
 load::load(const statement &x, int t) : statement(x), num(t) {}
 statement* load::EXEC() { cache = data[1] + data[2]; return this; }
-statement* load::MA() { cache = mem.load(cache, num); return this; }
+statement* load::MA() { cache = mem.load(cache, num), cpu.writetmp(1, data[0], cache); return this; }
 statement* load::WB() { writecache(0, cache); return this; }
 
 store::store(const statement &x, int t) : statement(x), num(t) {}
@@ -544,8 +549,8 @@ statement* store::MA() { mem.store(cache, data[0] , num); return this; }
 statement* store::WB() { return this; }
 
 Move::Move(const statement &x) : statement(x) {}
-statement* Move::EXEC() { cache = data[1]; return this; }
-statement* Move::MA() { return this; }
+statement* Move::EXEC() { cache = data[1], cpu.writetmp(0, data[0], cache); return this; }
+statement* Move::MA() { cpu.writetmp(1, data[0], cache); return this; }
 statement* Move::WB() { writecache(0, cache); return this; }
 
 nop::nop(const statement &x) : statement(x) {}

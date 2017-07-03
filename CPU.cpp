@@ -12,6 +12,7 @@ map<string, int> CPU::cache_code;
 
 CPU::CPU()
 {
+	id[0] = id[1] = -1;
 	for (int i = 0; i < 35; i++) cache[i] = used[i] = 0;
 	cache[32] = 0;
 	cache[29] = 4 * 1024 * 1024;
@@ -76,16 +77,39 @@ int CPU::exchange(const string &x)
 	return cache_code[x];
 }
 
-bool CPU::valid(const int &x) { return !used[x]; }
+bool CPU::valid(const int &x)
+{
+	if (id[0] == x) return 1;
+	if (id[1] == x) return 1;
+	if (used[x] < 0) throw "cnm";
+	return used[x] == 0;
+}
 
-bool CPU::valid(const string &x) { return !used[exchange(x)]; }
+bool CPU::valid(const string &x)
+{
+	if (id[0] == exchange(x)) return 1;
+	if (id[1] == exchange(x)) return 1;
+	return used[exchange(x)] == 0;
+}
 
-void CPU::setused(const int &x, bool t) { used[x] = t; }
+void CPU::setused(const int &x, bool t) { used[x] += t ? 1 : -1; }
+void CPU::setused(const string &x, bool t) { used[exchange(x)] += t ? 1 : -1; }
 
-void CPU::setused(const string &x, bool t) { used[exchange(x)] = t; }
+int& CPU::operator[](const int &x)
+{
+	if (id[0] == x) return num[0];
+	if (id[1] == x) return num[1];
+	return cache[x];
+}
+int& CPU::operator[](const string &x)
+{
+	if (id[0] == exchange(x)) return num[0];
+	if (id[1] == exchange(x)) return num[1];
+	return cache[exchange(x)];
+}
 
-int& CPU::operator[](const int &x) { return cache[x]; }
-int& CPU::operator[](const string &x) { return cache[exchange(x)]; }
+void CPU::writetmp(int k, int _id, int _num) { id[k] = _id, num[k] = _num; }
+void CPU::cleantmp(int k) { id[k] = -1; }
 
 ostream& operator << (ostream &os, const CPU &cpu)
 {
