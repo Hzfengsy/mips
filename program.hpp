@@ -51,12 +51,10 @@ public:
 class Program
 {
 	vector<command> commands;
+	vector<statement*> instructions;
 	map<string, int> labels;
 	istream &is; ostream &os;
 	statement* cache[4];
-//	std::condition_variable empty[4], full[4];
-//	mutex empty_lock[4], full_lock[4];
-//	mutex _lock[4];
 	CPU &cpu;
 	Memory &mem;
 	int clocks = 0;
@@ -64,6 +62,7 @@ class Program
 	friend class syscall;
 public:
 	Program(CPU &_cpu, Memory &_mem, istream &_is, ostream &_os);
+	~Program();
 	
 	bool globl;
 	bool hazard;
@@ -75,9 +74,10 @@ public:
 	
 	int getLabel(const string &Label);
 	
-	OP getcommand(int index, int data[], int state[]);
+	OP getcommand(int index, int data[], char state[]);
 	OP getOp(int index);
 	
+	statement* getInstruction(int index);
 	command* getcommand(const string &label);
 	
 	void exchengLabel();

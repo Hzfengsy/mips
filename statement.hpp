@@ -32,14 +32,16 @@ protected:
 	CPU &cpu;
 	Program *pro;
 	Memory &mem;
-	int data[3], state[3];
-	OP op;
+	int data[3];
+	char state[3];
+//	OP op;
 	int cache;
 public:
 	statement(Program *_pro);
 	bool loadcache(int index);
 	bool loadcache(string st, int i);
 	void lockcache(int index);
+	void lockcacheimm(int index);
 	void lockcache(string st);
 	void writecache(int index, int x);
 	void writecacheimm(int index, int x);

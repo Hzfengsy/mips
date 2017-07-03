@@ -95,7 +95,150 @@ scanner& operator >> (scanner &scan, command &x)
 Program::Program(CPU &_cpu, Memory &_mem, istream &_is, ostream &_os)
 	:cpu(_cpu), mem(_mem), is(_is), os(_os) {}
 
-void Program::push_back(const command &x) { commands.push_back(x); }
+Program::~Program()
+{
+	for (int i = 0; i < instructions.size(); i++) delete instructions[i];
+}
+
+void Program::push_back(const command &x)
+{
+	commands.push_back(x);
+	statement* t;
+	switch (x.op) {
+		case ADD:
+			t = new add(this);
+			break;
+		case SUB:
+			t = new sub(this);
+			break;
+		case MUL:
+			t = new mul(this);
+			break;
+		case MULU:
+			t = new mulu(this);
+			break;
+		case DIV:
+			t = new Div(this);
+			break;
+		case DIVU:
+			t = new Divu(this);
+			break;
+		case XOR:
+			t = new Xor(this);
+			break;
+		case NEG:
+			t = new neg(this);
+			break;
+		case REM:
+			t = new rem(this);
+			break;
+		case REMU:
+			t = new remu(this);
+			break;
+		case LI:
+			t = new li(this);
+			break;
+		case SEQ:
+			t = new seq(this);
+			break;
+		case SGE:
+			t = new sge(this);
+			break;
+		case SGT:
+			t = new sgt(this);
+			break;
+		case SLE:
+			t = new sle(this);
+			break;
+		case SLT:
+			t = new slt(this);
+			break;
+		case SNE:
+			t = new sne(this);
+			break;
+		case JMP:
+			t = new jmp(this);
+			break;
+		case JMPL:
+			t = new jmpl(this);
+			break;
+		case BEQ:
+			t = new beq(this);
+			break;
+		case BNE:
+			t = new bne(this);
+			break;
+		case BGE:
+			t = new bge(this);
+			break;
+		case BLE:
+			t = new ble(this);
+			break;
+		case BGT:
+			t = new bgt(this);
+			break;
+		case BLT:
+			t = new blt(this);
+			break;
+		case BEQZ:
+			t = new beqz(this);
+			break;
+		case BNEZ:
+			t = new bnez(this);
+			break;
+		case BGEZ:
+			t = new bgez(this);
+			break;
+		case BLEZ:
+			t = new blez(this);
+			break;
+		case BGTZ:
+			t = new bgtz(this);
+			break;
+		case BLTZ:
+			t = new bltz(this);
+			break;
+		case LA:
+			t = new la(this);
+			break;
+		case LB:
+			t = new load(this, 1);
+			break;
+		case LH:
+			t = new load(this, 2);
+			break;
+		case LW:
+			t = new load(this, 4);
+			break;
+		case SB:
+			t = new store(this, 1);
+			break;
+		case SH:
+			t = new store(this, 2);
+			break;
+		case SW:
+			t = new store(this, 4);
+			break;
+		case MOVE:
+			t = new Move(this);
+			break;
+		case MFHI:
+			t = new mfhi(this);
+			break;
+		case MFLO:
+			t = new mflo(this);
+			break;
+		case NOP:
+			t = new nop(this);
+		case SYS:
+			t = new syscall(this);
+			break;
+		default:
+			throw invalid_program();
+			break;
+	}
+	instructions.push_back(t);
+}
 
 void Program::addLabel(const string &Label)
 {
@@ -109,7 +252,7 @@ int Program::getLabel(const string &Label)
 	return labels[Label];
 }
 
-OP Program::getcommand(int index, int data[], int state[3])
+OP Program::getcommand(int index, int data[], char state[3])
 {
 	for (int i = 0; i < 3; i++)
 	{
@@ -177,9 +320,11 @@ void Program::WB()
 	if (cache[3] == NULL) return;
 	statement *ans = cache[3]->WB();
 	if (ans == NULL) return;
-	delete cache[3]; cache[3] = NULL;
+	cache[3] = NULL;
 	
 }
+
+statement* Program::getInstruction(int index) { return instructions[index]; }
 
 int Program::run()
 {

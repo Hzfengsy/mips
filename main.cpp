@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
 //	ifstream f("/Users/fengsiyuan/Onedrive/OI/SJTU/mips/mips/testsuit-1/array_test1-mahaojun.in");
 	Program program(cpu, memory, cin, cout);
 	CPU::inti();
-//	ifstream fin("/Users/fengsiyuan/Onedrive/OI/SJTU/mips/mips/testsuit-1/bulgarian-5110379024-wuhang.s");
+//	ifstream fin("/Users/fengsiyuan/Onedrive/OI/SJTU/mips/mips/testsuit-1/maxflow-5100379110-daibo.s");
 	ifstream fin(argv[1]);
 	Decoder text(fin, memory, program);
 	text.process();
