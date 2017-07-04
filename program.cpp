@@ -254,12 +254,13 @@ int Program::getLabel(const string &Label)
 
 OP Program::getcommand(int index, int data[], char state[3])
 {
+	command &t = commands[index];
 	for (int i = 0; i < 3; i++)
 	{
-		data[i] = commands[index].data[i];
-		state[i] = commands[index].state[i];
+		data[i] = t.data[i];
+		state[i] = t.state[i];
 	}
-	return commands[index].op;
+	return t.op;
 }
 
 OP Program::getOp(int index) { return commands[index].op; }
