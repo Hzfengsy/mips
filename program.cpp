@@ -316,12 +316,15 @@ void Program::MA()
 
 void Program::WB()
 {
-	
 	if (cache[3] == NULL) return;
 	statement *ans = cache[3]->WB();
 	if (ans == NULL) return;
 	cache[3] = NULL;
-	
+}
+
+void Program::cleanCache()
+{
+	cache[0] = NULL;
 }
 
 statement* Program::getInstruction(int index) { return instructions[index]; }
@@ -347,9 +350,11 @@ int Program::run()
 		EX();
 		ID();
 		IF();
+		clocks++;
 //		for (int i = 0; i < 35; i++) fout << cpu[i] << " ";
 //		fout<<endl;
 	}
-//	cerr << endl << clocks << endl;
+	cerr << endl << clocks << endl;
+	cerr << right << " / " << total << " = " << (double)right/total * 100 << "%" << endl;
 	return globl_return;
 }

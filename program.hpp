@@ -61,6 +61,7 @@ class Program
 	friend class statement;
 	friend class syscall;
 public:
+	int total = 0, right = 0;
 	Program(CPU &_cpu, Memory &_mem, istream &_is, ostream &_os);
 	~Program();
 	
@@ -80,6 +81,7 @@ public:
 	statement* getInstruction(int index);
 	command* getcommand(const string &label);
 	
+	void cleanCache();
 	void exchengLabel();
 	
 	void IF();

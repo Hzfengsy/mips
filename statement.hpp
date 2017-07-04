@@ -13,8 +13,10 @@
 #include "scanner.hpp"
 #include "CPU.hpp"
 #include <iostream>
+#include <bitset>
 using std::ostream;
 using std::istream;
+using std::bitset;
 using std::endl;
 using std::cerr;
 typedef unsigned int uint;
@@ -79,6 +81,9 @@ public:
 
 class bbase : public statement
 {
+protected:
+	int backup;
+	bitset<4> b;
 public:
 	bbase(Program *pro) : statement(pro) {}
 	virtual statement* ID();

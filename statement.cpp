@@ -14,7 +14,6 @@ inline bool statement::loadcache(int i)
 {
 	if (state[i] == 2) return 1;
 	if (!cpu.valid(data[i])) return 0;
-//	int t = data[i];
 	data[i] = cpu[data[i]];
 	state[i] = 2;
 	return 1;
@@ -41,7 +40,7 @@ inline void statement::writecache(int i, int x)
 inline void statement::writecacheimm(int i, int x)
 {
 	cpu[i] = x;
-	cpu.setused(i, 0);
+	if (i != 32) cpu.setused(i, 0);
 }
 
 statement* statement::IF(Program *pro)
@@ -69,27 +68,32 @@ statement* binary::WB() { writecache(0, cache); return this; }
 statement* bbase::ID()
 {
 	if (!loadcache(0) || !loadcache(1)) return NULL;
-	lockcacheimm(32);
-	pro->hazard = 1;
+	if (b.count() >= 2) backup = cpu[32], writecacheimm(32, data[2]);
+	else backup = data[2];
 	return this;
 }
-statement* bbase::EX() { return this; }
-statement* bbase::MA() { return this; }
-statement* bbase::WB()
+statement* bbase::EX()
 {
-	if (cache) writecacheimm(32, data[2]);
-	else cpu.setused(32, 0);
-	pro->hazard = 0;
+	if ((b.count() >= 2 && cache == 0) || (b.count() < 2 && cache == 1))
+	{
+		pro->cleanCache();
+		writecacheimm(32, backup);
+	}
+	else pro->right++;
+	pro->total++;
+	b = b << 1 | bitset<4>(cache);
 	return this;
 }
+statement* bbase::MA() { return this; }
+statement* bbase::WB() { return this; }
 
 statement* bbasez::ID()
 {
 	if (!loadcache(0)) return NULL;
 	data[2] = data[1];
 	data[1] = 0;
-	lockcacheimm(32);
-	pro->hazard = 1;
+	if (b.count() >= 2) backup = cpu[32], writecacheimm(32, data[2]);
+	else backup = data[2];
 	return this;
 }
 
@@ -193,19 +197,17 @@ statement* sne::EX() { cache = data[1] != data[2]; return binary::EX(); }
 statement* jmp::ID()
 {
 	if (!loadcache(0)) return NULL;
-	pro->hazard = 1;
-	lockcacheimm(32);
+	writecacheimm(32, data[0]);
 	return this;
 }
 statement* jmp::EX() { return this; }
 statement* jmp::MA() { return this; }
-statement* jmp::WB() { writecacheimm(32, data[0]); pro->hazard = 0; return this; }
+statement* jmp::WB() { return this; }
 
 statement* jmpl::ID()
 {
 	if (!loadcache(0) || !loadcache("$PC", 1)) return NULL;
-	pro->hazard = 1;
-	lockcacheimm(32);
+	writecacheimm(32, data[0]);
 	lockcacheimm(31);
 	return this;
 }
@@ -214,8 +216,6 @@ statement* jmpl::MA() { return this; }
 statement* jmpl::WB()
 {
 	writecacheimm(31, data[1]);
-	writecacheimm(32, data[0]);
-	pro->hazard = 0;
 	return this;
 }
 
