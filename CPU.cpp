@@ -12,7 +12,7 @@ map<string, int> CPU::cache_code;
 
 CPU::CPU()
 {
-	for (int i = 0; i < 35; i++) cache[i] = 0;
+	for (int i = 0; i < 35; i++) cache[i] = used[i] = 0, _lock[i].unlock();
 	cache[32] = 0;
 	cache[29] = 4 * 1024 * 1024;
 }
@@ -76,16 +76,31 @@ int CPU::exchange(const string &x)
 	return cache_code[x];
 }
 
-//bool CPU::valid(const int &x) { return !used[x]; }
+bool CPU::valid(const int &x)
+{
+	_lock[x].lock(), _lock[x].unlock();
+	return 1;
+}
 
-//bool CPU::valid(const string &x) { return !used[exchange(x)]; }
+bool CPU::valid(const string &x) { return valid(exchange(x)); }
 
-//void CPU::setused(const int &x, bool t) { used[x] = t; }
+void CPU::setused(const int &x, bool t)
+{
+	used[x] += t ? 1 : -1;
+	if (used[x] == 0) _lock[x].unlock();
+	if (used[x] > 0) _lock[x].try_lock();
+	if (used[x] < 0) throw runtime_error();
+}
+void CPU::setused(const string &x, bool t) { setused(exchange(x), t); }
 
-//void CPU::setused(const string &x, bool t) { used[exchange(x)] = t; }
-
-int& CPU::operator[](const int &x) { return cache[x]; }
-int& CPU::operator[](const string &x) { return cache[exchange(x)]; }
+int& CPU::operator[](const int &x)
+{
+	return cache[x];
+}
+int& CPU::operator[](const string &x)
+{
+	return cache[exchange(x)];
+}
 
 ostream& operator << (ostream &os, const CPU &cpu)
 {

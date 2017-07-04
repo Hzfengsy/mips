@@ -95,7 +95,150 @@ scanner& operator >> (scanner &scan, command &x)
 Program::Program(CPU &_cpu, Memory &_mem, istream &_is, ostream &_os)
 	:cpu(_cpu), mem(_mem), is(_is), os(_os) {}
 
-void Program::push_back(const command &x) { commands.push_back(x); }
+Program::~Program()
+{
+	for (int i = 0; i < instructions.size(); i++) delete instructions[i];
+}
+
+void Program::push_back(const command &x)
+{
+	commands.push_back(x);
+	statement* t;
+	switch (x.op) {
+		case ADD:
+			t = new add(this);
+			break;
+		case SUB:
+			t = new sub(this);
+			break;
+		case MUL:
+			t = new mul(this);
+			break;
+		case MULU:
+			t = new mulu(this);
+			break;
+		case DIV:
+			t = new Div(this);
+			break;
+		case DIVU:
+			t = new Divu(this);
+			break;
+		case XOR:
+			t = new Xor(this);
+			break;
+		case NEG:
+			t = new neg(this);
+			break;
+		case REM:
+			t = new rem(this);
+			break;
+		case REMU:
+			t = new remu(this);
+			break;
+		case LI:
+			t = new li(this);
+			break;
+		case SEQ:
+			t = new seq(this);
+			break;
+		case SGE:
+			t = new sge(this);
+			break;
+		case SGT:
+			t = new sgt(this);
+			break;
+		case SLE:
+			t = new sle(this);
+			break;
+		case SLT:
+			t = new slt(this);
+			break;
+		case SNE:
+			t = new sne(this);
+			break;
+		case JMP:
+			t = new jmp(this);
+			break;
+		case JMPL:
+			t = new jmpl(this);
+			break;
+		case BEQ:
+			t = new beq(this);
+			break;
+		case BNE:
+			t = new bne(this);
+			break;
+		case BGE:
+			t = new bge(this);
+			break;
+		case BLE:
+			t = new ble(this);
+			break;
+		case BGT:
+			t = new bgt(this);
+			break;
+		case BLT:
+			t = new blt(this);
+			break;
+		case BEQZ:
+			t = new beqz(this);
+			break;
+		case BNEZ:
+			t = new bnez(this);
+			break;
+		case BGEZ:
+			t = new bgez(this);
+			break;
+		case BLEZ:
+			t = new blez(this);
+			break;
+		case BGTZ:
+			t = new bgtz(this);
+			break;
+		case BLTZ:
+			t = new bltz(this);
+			break;
+		case LA:
+			t = new la(this);
+			break;
+		case LB:
+			t = new load(this, 1);
+			break;
+		case LH:
+			t = new load(this, 2);
+			break;
+		case LW:
+			t = new load(this, 4);
+			break;
+		case SB:
+			t = new store(this, 1);
+			break;
+		case SH:
+			t = new store(this, 2);
+			break;
+		case SW:
+			t = new store(this, 4);
+			break;
+		case MOVE:
+			t = new Move(this);
+			break;
+		case MFHI:
+			t = new mfhi(this);
+			break;
+		case MFLO:
+			t = new mflo(this);
+			break;
+		case NOP:
+			t = new nop(this);
+		case SYS:
+			t = new syscall(this);
+			break;
+		default:
+			throw invalid_program();
+			break;
+	}
+	instructions.push_back(t);
+}
 
 void Program::addLabel(const string &Label)
 {
@@ -109,20 +252,17 @@ int Program::getLabel(const string &Label)
 	return labels[Label];
 }
 
-OP Program::getcommand(int index, int data[], bool &imm, int &num)
+OP Program::getcommand(int index, int data[], char state[3])
 {
-	imm = num = 0;
 	for (int i = 0; i < 3; i++)
 	{
 		data[i] = commands[index].data[i];
-		if (commands[index].state[i] == 2) imm = 1;
-		if (commands[index].state[i]) num++;
+		state[i] = commands[index].state[i];
 	}
-	if (commands[index].op == BEQ || commands[index].op == BNE || commands[index].op == BLE ||
-		commands[index].op == BLT || commands[index].op == BGE || commands[index].op == BGT)
-		imm = commands[index].state[1] == 2;
 	return commands[index].op;
 }
+
+OP Program::getOp(int index) { return commands[index].op; }
 
 command* Program::getcommand(const string &label) { return new command(commands[getLabel(label)]); }
 
@@ -140,99 +280,117 @@ void Program::exchengLabel()
 
 void Program::IF()
 {
-	while(1)
+	while(globl == 0)
 	{
+		hazard.lock();
+		hazard.unlock();
+		statement *ans = statement::IF(this);
+		
 		std::unique_lock<mutex> lock0(_lock[0]);
 		while (cache[0] != NULL) empty[0].wait(lock0);
-//		while (cache[0] != NULL) continue;
-		statement *st = new statement(this);
-		cache[0] = st->IF();
+		cache[0] = ans;
 		full[0].notify_all();
 	}
 }
 
 void Program::ID()
 {
-	while (1)
+	while (globl == 0)
 	{
+		statement *t;
+		
 		std::unique_lock<mutex> lock0(_lock[0]);
 		while (cache[0] == NULL) full[0].wait(lock0);
-//		while (cache[0] == NULL) continue;
+		t = cache[0], cache[0] = NULL;
+		empty[0].notify_all();
+		
+		statement *ans = t->ID();
+		
 		std::unique_lock<mutex> lock1(_lock[1]);
 		while (cache[1] != NULL) empty[1].wait(lock1);
-//		while (cache[1] != NULL) continue;
-		statement *ans = cache[0]->ID();
 		cache[1] = ans;
-		delete cache[0]; cache[0] = NULL;
-		full[1].notify_all(), empty[0].notify_all();
-		clocks++;
+		full[1].notify_all();
 	}
 }
 
 void Program::EX()
 {
-	while(1)
+	while (globl == 0)
 	{
+		statement *t;
+		
 		std::unique_lock<mutex> lock1(_lock[1]);
 		while (cache[1] == NULL) full[1].wait(lock1);
-//		while (cache[1] == NULL) continue;
+		t = cache[1], cache[1] = NULL;
+		empty[1].notify_all();
+		
+		statement *ans = t->EX();
+		
 		std::unique_lock<mutex> lock2(_lock[2]);
 		while (cache[2] != NULL) empty[2].wait(lock2);
-//		while (cache[2] != NULL) continue;
-		statement *ans = cache[1]->EXEC();
 		cache[2] = ans;
-		cache[1] = NULL;
-		full[2].notify_all(), empty[1].notify_all();
+		full[2].notify_all();
 	}
 }
 
 void Program::MA()
 {
-	while(1)
+	while (globl == 0)
 	{
-//		std::this_thread::sleep_for(std::chrono::milliseconds(900));
+		statement *t;
+		
 		std::unique_lock<mutex> lock2(_lock[2]);
 		while (cache[2] == NULL) full[2].wait(lock2);
-//		while (cache[2] == NULL) continue;
+		t = cache[2], cache[2] = NULL;
+		empty[2].notify_all();
+		
+		statement *ans = t->MA();
+		
 		std::unique_lock<mutex> lock3(_lock[3]);
 		while (cache[3] != NULL) empty[3].wait(lock3);
-//		while (cache[3] != NULL) continue;
-		statement *ans = cache[2]->MA();
 		cache[3] = ans;
-		cache[2] = NULL;
-		full[3].notify_all(), empty[2].notify_all();
+		full[3].notify_all();
 	}
 }
 
 void Program::WB()
 {
 //	std::ofstream fout("/Users/fengsiyuan/Onedrive/OI/SJTU/mips/Test.out");
-	while(1)
+	while(globl == 0)
 	{
+		statement *t;
+		
 		std::unique_lock<mutex> lock3(_lock[3]);
 		while (cache[3] == NULL) full[3].wait(lock3);
-//		while (cache[3] == NULL) continue;
-		cache[3]->WB();
-		delete cache[3]; cache[3] = NULL;
+		t = cache[3], cache[3] = NULL;
 		empty[3].notify_all();
+		
+		t->WB();
+//		for (int i  = 0; i < 35; i++) fout << cpu[i] << " ";
+//		fout << endl;
 	}
 }
+
+statement* Program::getInstruction(int index) { return instructions[index]; }
 
 int Program::run()
 {
 	cache[0] = cache[1] = cache[2] = cache[3] = NULL;
-//	mem.lock = 0;
+	for (int i = 0; i < 4; i++) _lock[i].unlock();
 	cpu["$PC"] = getLabel("main");
 //
-	globl.lock();
-	thread _WB(std::bind(&Program::WB, this)); _WB.detach();
-	thread _MA(std::bind(&Program::MA, this)); _MA.detach();
-	thread _EX(std::bind(&Program::EX, this)); _EX.detach();
-	thread _ID(std::bind(&Program::ID, this)); _ID.detach();
-	thread _IF(std::bind(&Program::IF, this)); _IF.detach();
-	
-	globl.lock();
-	globl.unlock();
-//	cerr << endl << clocks << endl;
+	globl = 0;
+	thread _WB(std::bind(&Program::WB, this));
+	thread _MA(std::bind(&Program::MA, this));
+	thread _EX(std::bind(&Program::EX, this));
+	thread _ID(std::bind(&Program::ID, this));
+	thread _IF(std::bind(&Program::IF, this));
+//	std::ofstream fout("/Users/fengsiyuan/Onedrive/OI/SJTU/mips/Test.out");
+
+	_IF.join();
+	_ID.join();
+	_EX.join();
+	_MA.join();
+	_WB.join();
 	return globl_return;
 }

@@ -2,7 +2,7 @@ CC = g++
 CFLAGS = -Wall -std=c++11 -O2
 
 ################!! MODIFY HERE !!####################
-_OBJ  = CPU.o   memory.o   program.o   scanner.o   statement.o   Text.o main.o
+_OBJ  = CPU.o   memory.o   program.o   scanner.o   statement.o   Text.o   main.o
 _DEPS = CPU.hpp memory.hpp program.hpp scanner.hpp statement.hpp Text.hpp exception.hpp
 #####################################################
 
