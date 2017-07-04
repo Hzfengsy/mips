@@ -68,20 +68,22 @@ statement* binary::WB() { writecache(0, cache); return this; }
 statement* bbase::ID()
 {
 	if (!loadcache(0) || !loadcache(1)) return NULL;
-	if (b.count() >= 2) backup = cpu[32], writecacheimm(32, data[2]);
+	if (p[state] >= 0) backup = cpu[32], writecacheimm(32, data[2]);
 	else backup = data[2];
 	return this;
 }
 statement* bbase::EX()
 {
-	if ((b.count() >= 2 && cache == 0) || (b.count() < 2 && cache == 1))
+	if ((p[state] >= 0 && cache == 0) || (p[state] < 0 && cache == 1))
 	{
 		pro->cleanCache();
 		writecacheimm(32, backup);
 	}
 	else pro->right++;
 	pro->total++;
-	b = b << 1 | bitset<4>(cache);
+	if (cache) p[state] += p[state] < 1;
+	else p[state] -= p[state] > -3;
+	state = ((state << 1) | cache) & 0xf;
 	return this;
 }
 statement* bbase::MA() { return this; }
@@ -92,7 +94,7 @@ statement* bbasez::ID()
 	if (!loadcache(0)) return NULL;
 	data[2] = data[1];
 	data[1] = 0;
-	if (b.count() >= 2) backup = cpu[32], writecacheimm(32, data[2]);
+	if (p[state] >= 0) backup = cpu[32], writecacheimm(32, data[2]);
 	else backup = data[2];
 	return this;
 }

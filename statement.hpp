@@ -83,9 +83,13 @@ class bbase : public statement
 {
 protected:
 	int backup;
-	bitset<4> b;
+	int p[16], state;
 public:
-	bbase(Program *pro) : statement(pro) {}
+	bbase(Program *pro) : statement(pro)
+	{
+		state = 0;
+		for (int i = 0; i < 16; i++) p[i] = 0;
+	}
 	virtual statement* ID();
 	virtual statement* EX();
 	virtual statement* MA();
