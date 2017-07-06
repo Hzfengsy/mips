@@ -65,7 +65,7 @@ statement* statement::IF(Program *pro)
 		case BLTZ:
 		case BNEZ:
 		case SYS:
-			pro->hazard.lock();
+			pro->hazard = 1;
 			break;
 		default:
 			break;
@@ -100,7 +100,7 @@ statement* bbase::WB()
 {
 	if (cache) writecacheimm(32, data[2]);
 	else cpu.setused(32, 0);
-	pro->hazard.unlock();
+	pro->hazard = 0;
 	return this;
 }
 
@@ -218,7 +218,7 @@ statement* jmp::ID()
 }
 statement* jmp::EX() { return this; }
 statement* jmp::MA() { return this; }
-statement* jmp::WB() { writecacheimm(32, data[0]); pro->hazard.unlock(); return this; }
+statement* jmp::WB() { writecacheimm(32, data[0]); pro->hazard = 0; return this; }
 
 statement* jmpl::ID()
 {
@@ -233,7 +233,7 @@ statement* jmpl::WB()
 {
 	writecacheimm(31, data[1]);
 	writecacheimm(32, data[0]);
-	pro->hazard.unlock();
+	pro->hazard = 0;
 	return this;
 }
 
@@ -325,6 +325,6 @@ statement* syscall::WB()
 	else cpu.setused(2, 0);
 	if (v0 == 10) pro->globl_return = 0, pro->globl = 1;
 	if (v0 == 17) pro->globl_return = data[1], pro->globl = 1;
-	pro->hazard.unlock();
+	pro->hazard = 0;
 	return this;
 }

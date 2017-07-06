@@ -14,6 +14,7 @@
 #include <map>
 #include <iostream>
 #include <thread>
+#include <atomic>
 using std::string;
 using std::map;
 using std::ostream;
@@ -23,8 +24,8 @@ class CPU
 {
 private:
 	int cache[35];
-	int used[35];
-	mutex _lock[35];
+	std::atomic<int> used[35];
+//	mutex _lock[35];
 	static map<string, int> cache_code;
 	
 public:

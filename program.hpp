@@ -21,6 +21,7 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
+#include <atomic>
 using std::string;
 using std::vector;
 using std::map;
@@ -28,6 +29,7 @@ using std::istream;
 using std::ostream;
 using std::mutex;
 using std::thread;
+using std::atomic;
 
 
 class statement;
@@ -55,8 +57,7 @@ class Program
 	map<string, int> labels;
 	istream &is; ostream &os;
 	statement* cache[4];
-	mutex _lock[4];
-	std::condition_variable empty[4], full[4];
+	atomic<bool> empty[4], full[4];
 	CPU &cpu;
 	Memory &mem;
 	int clocks = 0;
@@ -67,7 +68,7 @@ public:
 	~Program();
 	
 	bool globl;
-	mutex hazard;
+	atomic<bool> hazard;
 	int globl_return;
 
 	void push_back(const command &x);

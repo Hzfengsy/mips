@@ -282,14 +282,12 @@ void Program::IF()
 {
 	while(globl == 0)
 	{
-		hazard.lock();
-		hazard.unlock();
+		while (hazard) ; //std::this_thread::yield();
 		statement *ans = statement::IF(this);
 		{
-			std::unique_lock<mutex> lock0(_lock[0]);
-			while (cache[0] != NULL) empty[0].wait(lock0);
+			while (full[0]) ; //; //std::this_thread::yield();
 			cache[0] = ans;
-			full[0].notify_all();
+			full[0] = 1, empty[0] = 0;
 		}
 	}
 }
@@ -300,17 +298,15 @@ void Program::ID()
 	{
 		statement *t;
 		{
-			std::unique_lock<mutex> lock0(_lock[0]);
-			while (cache[0] == NULL) full[0].wait(lock0);
+			while (empty[0]) ; //std::this_thread::yield();
 			t = cache[0], cache[0] = NULL;
-			empty[0].notify_all();
+			empty[0] = 1, full[0] = 0;
 		}
 		statement *ans = t->ID();
 		{
-			std::unique_lock<mutex> lock1(_lock[1]);
-			while (cache[1] != NULL) empty[1].wait(lock1);
+			while (full[1]) ; //std::this_thread::yield();
 			cache[1] = ans;
-			full[1].notify_all();
+			full[1] = 1, empty[1] = 0;
 		}
 	}
 }
@@ -321,17 +317,16 @@ void Program::EX()
 	{
 		statement *t;
 		{
-			std::unique_lock<mutex> lock1(_lock[1]);
-			while (cache[1] == NULL) full[1].wait(lock1);
+			while (empty[1]) ; //std::this_thread::yield();
 			t = cache[1], cache[1] = NULL;
-			empty[1].notify_all();
+			empty[1] = 1, full[1] = 0;
 		}
 		statement *ans = t->EX();
-		
-		std::unique_lock<mutex> lock2(_lock[2]);
-		while (cache[2] != NULL) empty[2].wait(lock2);
-		cache[2] = ans;
-		full[2].notify_all();
+		{
+			while (full[2]) ; //std::this_thread::yield();
+			cache[2] = ans;
+			full[2] = 1, empty[2] = 0;
+		}
 	}
 }
 
@@ -341,17 +336,15 @@ void Program::MA()
 	{
 		statement *t;
 		{
-			std::unique_lock<mutex> lock2(_lock[2]);
-			while (cache[2] == NULL) full[2].wait(lock2);
+			while (empty[2]) ; //std::this_thread::yield();
 			t = cache[2], cache[2] = NULL;
-			empty[2].notify_all();
+			empty[2] = 1, full[2] = 0;
 		}
 		statement *ans = t->MA();
 		{
-			std::unique_lock<mutex> lock3(_lock[3]);
-			while (cache[3] != NULL) empty[3].wait(lock3);
+			while (full[3]) ; //std::this_thread::yield();
 			cache[3] = ans;
-			full[3].notify_all();
+			full[3] = 1, empty[3] = 0;
 		}
 	}
 }
@@ -363,10 +356,9 @@ void Program::WB()
 	{
 		statement *t;
 		{
-			std::unique_lock<mutex> lock3(_lock[3]);
-			while (cache[3] == NULL) full[3].wait(lock3);
+			while (empty[3]) ; //std::this_thread::yield();
 			t = cache[3], cache[3] = NULL;
-			empty[3].notify_all();
+			empty[3] = 1, full[3] = 0;
 		}
 		t->WB();
 //		for (int i  = 0; i < 35; i++) fout << cpu[i] << " ";
@@ -379,7 +371,7 @@ statement* Program::getInstruction(int index) { return instructions[index]; }
 int Program::run()
 {
 	cache[0] = cache[1] = cache[2] = cache[3] = NULL;
-	for (int i = 0; i < 4; i++) _lock[i].unlock();
+	for (int i = 0; i < 4; i++) empty[i] = 1, full[i] = 0;
 	cpu["$PC"] = getLabel("main");
 //
 	globl = 0;
