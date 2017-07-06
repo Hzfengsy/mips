@@ -280,34 +280,30 @@ void Program::exchengLabel()
 
 void Program::IF()
 {
-	while(globl == 0)
+	while (globl == 0)
 	{
-		while (hazard) ; //std::this_thread::yield();
-		statement *ans = statement::IF(this);
+		while (ready[0] == 1) ; //std::this_thread::yield();
+		if (tmp[0] == NULL && !hazard)
 		{
-			while (full[0]) ; //; //std::this_thread::yield();
+			statement *ans = statement::IF(this);
 			cache[0] = ans;
-			full[0] = 1, empty[0] = 0;
 		}
+		count--, ready[0] = 1;
 	}
+	
 }
 
 void Program::ID()
 {
 	while (globl == 0)
 	{
-		statement *t;
+		while (ready[1] == 1) ; //std::this_thread::yield();
+		if (tmp[1] == NULL && tmp[0] != NULL)
 		{
-			while (empty[0]) ; //std::this_thread::yield();
-			t = cache[0], cache[0] = NULL;
-			empty[0] = 1, full[0] = 0;
+			statement *ans = tmp[0]->ID();
+			if (ans != NULL) cache[1] = ans, cache[0] = NULL;
 		}
-		statement *ans = t->ID();
-		{
-			while (full[1]) ; //std::this_thread::yield();
-			cache[1] = ans;
-			full[1] = 1, empty[1] = 0;
-		}
+		count--, ready[1] = 1;
 	}
 }
 
@@ -315,18 +311,13 @@ void Program::EX()
 {
 	while (globl == 0)
 	{
-		statement *t;
+		while (ready[2] == 1) ; //std::this_thread::yield();
+		if (tmp[2] == NULL && tmp[1] != NULL)
 		{
-			while (empty[1]) ; //std::this_thread::yield();
-			t = cache[1], cache[1] = NULL;
-			empty[1] = 1, full[1] = 0;
+			statement *ans = tmp[1]->EX();
+			if (ans != NULL) cache[2] = ans, cache[1] = NULL;
 		}
-		statement *ans = t->EX();
-		{
-			while (full[2]) ; //std::this_thread::yield();
-			cache[2] = ans;
-			full[2] = 1, empty[2] = 0;
-		}
+		count--, ready[2] = 1;
 	}
 }
 
@@ -334,35 +325,27 @@ void Program::MA()
 {
 	while (globl == 0)
 	{
-		statement *t;
+		while (ready[3] == 1) ; //std::this_thread::yield();
+		if (tmp[3] == NULL && tmp[2] != NULL)
 		{
-			while (empty[2]) ; //std::this_thread::yield();
-			t = cache[2], cache[2] = NULL;
-			empty[2] = 1, full[2] = 0;
+			statement *ans = tmp[2]->MA();
+			if (ans != NULL) cache[3] = ans, cache[2] = NULL;
 		}
-		statement *ans = t->MA();
-		{
-			while (full[3]) ; //std::this_thread::yield();
-			cache[3] = ans;
-			full[3] = 1, empty[3] = 0;
-		}
+		count--, ready[3] = 1;
 	}
 }
 
 void Program::WB()
 {
-//	std::ofstream fout("/Users/fengsiyuan/Onedrive/OI/SJTU/mips/Test.out");
-	while(globl == 0)
+	while (globl == 0)
 	{
-		statement *t;
+		while (ready[4] == 1) ; //std::this_thread::yield();
+		if (tmp[3] != NULL)
 		{
-			while (empty[3]) ; //std::this_thread::yield();
-			t = cache[3], cache[3] = NULL;
-			empty[3] = 1, full[3] = 0;
+			tmp[3]->WB();
+			cache[3] = NULL;
 		}
-		t->WB();
-//		for (int i  = 0; i < 35; i++) fout << cpu[i] << " ";
-//		fout << endl;
+		count--, ready[4] = 1;
 	}
 }
 
@@ -371,7 +354,6 @@ statement* Program::getInstruction(int index) { return instructions[index]; }
 int Program::run()
 {
 	cache[0] = cache[1] = cache[2] = cache[3] = NULL;
-	for (int i = 0; i < 4; i++) empty[i] = 1, full[i] = 0;
 	cpu["$PC"] = getLabel("main");
 //
 	globl = 0;
@@ -381,7 +363,18 @@ int Program::run()
 	thread _ID(std::bind(&Program::ID, this));
 	thread _IF(std::bind(&Program::IF, this));
 //	std::ofstream fout("/Users/fengsiyuan/Onedrive/OI/SJTU/mips/Test.out");
-
+	for (int i = 0; i < 5; i++) ready[i] = 0;
+	count = 0;
+	while (globl == 0)
+	{
+		while (count > 0) ; //std::this_thread::yield();
+		for (int i = 0; i < 5; i++)
+			while( ready[i] == 0 ) ; //std::this_thread::yield();
+		for (int i = 0; i < 4; i++) tmp[i] = cache[i];
+		count = 5;
+		for (int i = 0; i < 5; i++) ready[i] = 0;
+//		std::cout << clock++ << endl;
+	}
 	_IF.join();
 	_ID.join();
 	_EX.join();

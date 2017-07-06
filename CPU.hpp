@@ -25,7 +25,6 @@ class CPU
 private:
 	int cache[35];
 	std::atomic<int> used[35];
-//	mutex _lock[35];
 	static map<string, int> cache_code;
 	
 public:

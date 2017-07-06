@@ -41,7 +41,7 @@ inline void statement::writecache(int i, int x)
 inline void statement::writecacheimm(int i, int x)
 {
 	cpu[i] = x;
-	cpu.setused(i, 0);
+	if (i != 32) cpu.setused(i, 0);
 }
 
 statement* statement::IF(Program *pro)
@@ -91,7 +91,7 @@ statement* binary::WB() { writecache(0, cache); return this; }
 statement* bbase::ID()
 {
 	if (!loadcache(0) || !loadcache(1)) return NULL;
-	lockcacheimm(32);
+//	lockcacheimm(32);
 	return this;
 }
 statement* bbase::EX() { return this; }
@@ -99,7 +99,7 @@ statement* bbase::MA() { return this; }
 statement* bbase::WB()
 {
 	if (cache) writecacheimm(32, data[2]);
-	else cpu.setused(32, 0);
+//	else cpu.setused(32, 0);
 	pro->hazard = 0;
 	return this;
 }
@@ -109,7 +109,7 @@ statement* bbasez::ID()
 	if (!loadcache(0)) return NULL;
 	data[2] = data[1];
 	data[1] = 0;
-	lockcacheimm(32);
+//	lockcacheimm(32);
 	return this;
 }
 
@@ -213,7 +213,7 @@ statement* sne::EX() { cache = data[1] != data[2]; return binary::EX(); }
 statement* jmp::ID()
 {
 	if (!loadcache(0)) return NULL;
-	lockcacheimm(32);
+//	lockcacheimm(32);
 	return this;
 }
 statement* jmp::EX() { return this; }
@@ -223,7 +223,7 @@ statement* jmp::WB() { writecacheimm(32, data[0]); pro->hazard = 0; return this;
 statement* jmpl::ID()
 {
 	if (!loadcache(0) || !loadcache("$PC", 1)) return NULL;
-	lockcacheimm(32);
+//	lockcacheimm(32);
 	lockcacheimm(31);
 	return this;
 }

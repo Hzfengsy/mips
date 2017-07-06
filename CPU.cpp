@@ -78,7 +78,7 @@ int CPU::exchange(const string &x)
 
 bool CPU::valid(const int &x)
 {
-	while (used[x] > 0); //std::this_thread::yield();
+	if (used[x] > 0) return 0; //std::this_thread::yield();
 	return 1;
 }
 

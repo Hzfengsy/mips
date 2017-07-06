@@ -56,8 +56,9 @@ class Program
 	vector<statement*> instructions;
 	map<string, int> labels;
 	istream &is; ostream &os;
-	statement* cache[4];
-	atomic<bool> empty[4], full[4];
+	statement* cache[4], *tmp[4];
+	atomic<bool> ready[5];
+	atomic<int> count;
 	CPU &cpu;
 	Memory &mem;
 	int clocks = 0;
